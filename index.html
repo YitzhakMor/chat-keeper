@@ -148,6 +148,11 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .cwho{color:var(--accent);font-size:12.5px}
 .hfoot{max-width:720px;margin:0 auto;padding:14px 16px 100px;font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6}
 .fab{position:fixed;bottom:22px;inset-inline-end:22px;width:58px;height:58px;border-radius:16px;background:var(--accent);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer;z-index:5}
+.dlist{max-height:38vh;overflow:auto;border:1px solid var(--border);border-radius:8px;margin:10px 0}
+.dlist label{display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer}
+.dlist label:last-child{border-bottom:0}
+.dlist small{display:block;color:var(--muted);font-size:12px}
+.primary:disabled{opacity:.5;cursor:default}
 .danger{color:#d93025;border-color:#d93025}
 .spacer{flex:1}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;z-index:70;max-width:calc(100% - 32px);text-align:center}
@@ -162,7 +167,9 @@ var $=function(s){return document.querySelector(s);};
 
 var UI='<input id="pick" type="file" multiple hidden>'+
 '<div id="home" class="screen"><header class="top"><div class="htitle">שומר השיחות</div>'+
-'<button class="ib" data-help title="הוראות לייצוא שיחה" aria-label="הוראות לייצוא שיחה">❓</button></header>'+
+'<button class="ib" data-help title="הוראות לייצוא שיחה" aria-label="הוראות לייצוא שיחה">❓</button>'+
+'<button id="homeSave" class="savebtn" hidden>שמירה לשימור</button></header>'+
+'<div id="hbanner" class="note" hidden></div>'+
 '<div id="homeBody"><div id="homeEmpty" hidden><div class="wcard">'+
 '<div class="wicon">💬</div><h1>שומר השיחות</h1>'+
 '<p class="lead">שומרים כאן שיחות וואטסאפ שלא רוצים לאבד. רואים אותן כמו באפליקציה, ואפשר לשמור כל שיחה כקובץ שנפתח בכל דפדפן, גם בלי אינטרנט ובלי וואטסאפ.</p>'+
@@ -192,7 +199,8 @@ var UI='<input id="pick" type="file" multiple hidden>'+
 '<p>במסך השיחות לוחצים על "הוספת שיחה" (או על כפתור ה-+) ובוחרים את קובץ ה-ZIP. אחר כך בוחרים מהטלפון של מי השיחה יוצאה, נותנים לה שם, ואם רוצים מוסיפים הערה. השיחה נשמרת ברשימה במכשיר.</p>'+
 '<p class="muted">באנדרואיד, אם הוספתם את שומר השיחות למסך הבית, אפשר לבחור בו ישירות ברשימת השיתוף שמופיעה בזמן הייצוא מוואטסאפ.</p>'+
 '<h3>שלב 3: שמירה לשימור</h3>'+
-'<p>לוחצים על "שמירה לשימור" ומקבלים קובץ אחד שמכיל את כל השיחה, כולל התמונות. אפשר לפתוח אותו בכל דפדפן, גם בלי אינטרנט. כדאי לשמור אותו ביותר ממקום אחד, וגם את קובץ ה-ZIP המקורי.</p>'+
+'<p>לוחצים על "שמירה לשימור" ומקבלים קובץ אחד שמכיל את כל השיחות, כולל התמונות. אפשר לבחור אילו שיחות לכלול. את הקובץ אפשר לפתוח בכל דפדפן, גם בלי אינטרנט. כדאי לשמור אותו ביותר ממקום אחד, וגם את קובצי ה-ZIP המקוריים.</p>'+
+'<p>בטלפון חדש, או אחרי שנתוני הדפדפן נמחקו, טוענים את קובץ השימור באפליקציה עם כפתור ה-+, וכל השיחות חוזרות לרשימה.</p>'+
 '<p class="muted">לפי מרכז העזרה של וואטסאפ, ייצוא עם מדיה כולל עד 10,000 ההודעות האחרונות, וייצוא בלי מדיה עד 40,000. הכל מעובד בתוך המכשיר, ושום דבר לא נשלח לשרת.</p>'+
 '<div class="dact"><button class="primary" value="ok">הבנתי</button></div></form></dialog>'+
 '<dialog id="info"><form method="dialog" class="dcard"><h2>פרטי השיחה</h2>'+
@@ -200,10 +208,12 @@ var UI='<input id="pick" type="file" multiple hidden>'+
 '<label class="field"><span>שם השיחה</span><input id="fTitle" dir="auto"></label>'+
 '<label class="field"><span>הערה (לא חובה)</span><textarea id="fNote" dir="auto" placeholder="למשל: השיחה של אשתי עם נועה"></textarea></label>'+
 '<div class="dact"><button type="button" id="infoDel" class="ghost danger" hidden>מחיקה מהמכשיר</button><span class="spacer"></span><button class="ghost" value="cancel">ביטול</button><button id="infoOk" class="primary" value="ok">שמירה</button></div></form></dialog>'+
-'<dialog id="dlg"><form method="dialog" class="dcard"><h2>שמירת השיחה לשימור</h2>'+
-'<p id="dstats"></p><label class="chk"><input type="checkbox" id="incVideo" checked> לכלול סרטונים</label>'+
+'<dialog id="dlg"><form method="dialog" class="dcard"><h2>שמירה לשימור</h2>'+
+'<p class="muted">נוצר קובץ אחד עם כל השיחות שמסומנות כאן, כולל המדיה. פותחים אותו בכל דפדפן ורואים את רשימת השיחות. טעינה שלו בחזרה לאפליקציה (בכפתור ה-+) משחזרת את כולן.</p>'+
+'<div id="dlist" class="dlist"></div>'+
+'<label class="chk"><input type="checkbox" id="incVideo" checked> לכלול סרטונים</label>'+
 '<p id="dsize" class="muted"></p>'+
-'<p class="muted">ייווצר קובץ HTML אחד שמכיל את כל ההודעות והמדיה, ואפשר לפתוח אותו בכל דפדפן. כדאי לשמור עותקים בכמה מקומות: Google Drive, מייל לעצמך, ומחשב או דיסק חיצוני. כדאי לשמור גם את קובץ הייצוא המקורי.</p>'+
+'<p class="muted">כדאי לשמור את הקובץ ביותר ממקום אחד: Google Drive, מייל לעצמך, מחשב או דיסק חיצוני. כשמוסיפים שיחות חדשות, שומרים קובץ חדש.</p>'+
 '<div class="dact"><button class="ghost" value="cancel">ביטול</button><button id="doSave" class="primary" value="ok">שמירה</button></div></form></dialog>'+
 '<div id="gallery" hidden><div class="gtop"><button id="gx" class="ib" title="חזרה לשיחה" aria-label="חזרה לשיחה">→</button><div class="gtitle">מדיה מהשיחה</div></div>'+
 '<div class="tabs"><button data-tab="visual">תמונות וסרטונים</button><button data-tab="audio">הקלטות</button><button data-tab="file">קבצים</button></div>'+
@@ -284,16 +294,18 @@ async function zipEntryBlob(file,e,type){
 
 /* ---------- Media access ---------- */
 function mimeOf(n){return MIME[ext(n)]||'application/octet-stream';}
-async function getBlob(n){
-  var src=S.media.get(n);if(!src)return null;
+async function blobOf(src,n){
+  if(!src)return null;
   if(src.embedded){var node=document.getElementById(src.embedded);if(!node)return null;return await (await fetch(node.textContent.trim())).blob();}
   if(src.dataurl)return await (await fetch(src.dataurl)).blob();
   if(src.db)return (await dbGet('media',src.db+'/'+n))||null;
   if(src.file)return new Blob([src.file],{type:mimeOf(n)});
   return zipEntryBlob(src.zip,src.entry,mimeOf(n));
 }
-function srcSize(n){
-  var src=S.media.get(n);if(!src)return 0;
+function getBlob(n){return blobOf(S.media.get(n),n);}
+function srcSize(n){return sizeOf(S.media.get(n));}
+function sizeOf(src){
+  if(!src)return 0;
   if(src.entry)return src.entry.usize;
   if(src.file)return src.file.size;
   if(src.dataurl)return src.dataurl.length*0.75;
@@ -329,14 +341,74 @@ function previewOf(m){
   var t=m.x?m.x.replace(/\s+/g,' ').slice(0,90):m.f?ICONS[kind(m.f[0])]+' '+({image:'תמונה',video:'סרטון',audio:'הקלטה',file:'קובץ'})[kind(m.f[0])]:'';
   return (m.s?m.s+': ':'')+t;
 }
+function newId(){return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function peopleOf(msgs){
+  var cnt=new Map();msgs.forEach(function(m){if(m.s!=null)cnt.set(m.s,(cnt.get(m.s)||0)+1);});
+  return Array.from(cnt.entries()).sort(function(a,b){return b[1]-a[1];}).map(function(e){return e[0];});
+}
+/* Fills the list fields of a chat's metadata from its messages. */
+function metaFrom(msgs,base){
+  var last=msgs[msgs.length-1],m=Object.assign({},base);
+  m.people=peopleOf(msgs);m.count=msgs.length;m.first=msgs.length?msgs[0].t:0;m.last=last?last.t:0;m.preview=previewOf(last);
+  m.title=m.title||'שיחה';m.added=m.added||Date.now();
+  return m;
+}
 function chatMeta(names){
-  var last=S.msgs[S.msgs.length-1];
-  return {id:S.id,title:S.title,owner:S.owner,note:S.note,people:S.people,count:S.msgs.length,
-    first:S.msgs.length?S.msgs[0].t:0,last:last?last.t:0,preview:previewOf(last),added:S.added||Date.now(),
-    media:names||Array.from(S.media.keys()),sizes:S.sizes||{}};
+  return metaFrom(S.msgs,{id:S.id,title:S.title,owner:S.owner,note:S.note,added:S.added||Date.now(),
+    media:names||Array.from(S.media.keys()),sizes:S.sizes||{}});
+}
+
+/* The chat list comes from this device (IndexedDB), or, when a backup file is
+   opened on its own, from the chats embedded in that file (LIB). */
+var LIB=null;
+function libFind(id){return LIB.chats.find(function(c){return c.meta.id===id;});}
+function listChats(){return LIB?Promise.resolve(LIB.chats.map(function(c){return c.meta;})):dbAll('chats');}
+async function loadChat(id){
+  if(LIB){var c=libFind(id);return c?{meta:c.meta,msgs:c.msgs,media:c.media}:null;}
+  var m=await dbGet('chats',id),msgs=await dbGet('msgs',id);
+  if(!m||!msgs)return null;
+  return {meta:m,msgs:msgs,media:new Map((m.media||[]).map(function(n){return [n,{db:id,size:(m.sizes||{})[n]}];}))};
+}
+async function updateMeta(){
+  if(LIB){var c=libFind(S.id);if(c)c.meta=chatMeta(Array.from(S.media.keys()));return;}
+  await dbPut('chats',chatMeta(Array.from(S.media.keys())));
+}
+async function removeChat(id){
+  if(LIB){LIB.chats=LIB.chats.filter(function(c){return c.meta.id!==id;});return;}
+  await deleteStored(id);
+}
+async function importChats(chats){
+  var added=0,skipped=0;
+  for(var i=0;i<chats.length;i++){
+    var c=chats[i],id=c.meta.id;
+    if(id&&(LIB?libFind(id):await dbGet('chats',id))){skipped++;continue;}
+    id=id||newId();
+    busy('משחזר שיחה '+(i+1)+' מתוך '+chats.length+'…');
+    var meta=metaFrom(c.msgs,Object.assign({},c.meta,{id:id}));
+    if(LIB){LIB.chats.push({meta:meta,msgs:c.msgs,media:c.media});added++;continue;}
+    var kept=[],sizes={},names=Array.from(c.media.keys());
+    try{
+      for(var j=0;j<names.length;j++){
+        var b=await blobOf(c.media.get(names[j]),names[j]);
+        if(b){await dbPut('media',b,id+'/'+names[j]);kept.push(names[j]);sizes[names[j]]=b.size;}
+      }
+      await dbPut('msgs',c.msgs,id);
+      meta.media=kept;meta.sizes=sizes;
+      await dbPut('chats',meta);
+    }catch(e){await deleteStored(id).catch(function(){});throw e;}
+    added++;
+  }
+  try{if(!LIB&&added&&navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+  return {added:added,skipped:skipped};
 }
 async function storeChat(){
-  var id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),used=usedMedia(),kept=[],sizes={};
+  if(LIB){
+    var names=usedMedia(),media=new Map(names.map(function(n){return [n,S.media.get(n)];}));
+    S.id=newId();S.added=Date.now();S.media=media;
+    LIB.chats.push({meta:chatMeta(names),msgs:S.msgs,media:media});
+    return;
+  }
+  var id=newId(),used=usedMedia(),kept=[],sizes={};
   try{
     for(var i=0;i<used.length;i++){
       busy('שומר במכשיר: מדיה '+(i+1)+' מתוך '+used.length+'…');
@@ -358,12 +430,11 @@ async function deleteStored(id){
 async function openStored(id){
   busy('פותח את השיחה…');
   try{
-    var m=await dbGet('chats',id),msgs=await dbGet('msgs',id);
-    if(!m||!msgs)throw new Error('השיחה לא נמצאה במכשיר.');
+    var c=await loadChat(id);
+    if(!c)throw new Error('השיחה לא נמצאה.');
     resetMedia();
-    S.media=new Map((m.media||[]).map(function(n){return [n,{db:id,size:(m.sizes||{})[n]}];}));
-    S.id=id;S.archive=false;S.added=m.added;S.note=m.note||'';S.savedAt=0;S.sizes=m.sizes||{};
-    setup(msgs,m.owner,m.title);
+    S.media=c.media;S.id=id;S.archive=false;S.added=c.meta.added;S.note=c.meta.note||'';S.savedAt=LIB?LIB.saved:0;S.sizes=c.meta.sizes||{};
+    setup(c.msgs,c.meta.owner,c.meta.title);
   }catch(e){alert(e.message||String(e));}
   finally{busy(null);}
 }
@@ -372,9 +443,11 @@ async function showHome(){
   closeViewer();$('#gallery').hidden=true;
   $('#chat').hidden=true;$('#home').hidden=false;document.title='שומר השיחות';
   var list=[],ok=true;
-  try{list=await dbAll('chats');}catch(e){ok=false;}
+  try{list=await listChats();}catch(e){ok=false;}
   list.sort(function(a,b){return b.last-a.last;});
-  $('#homeEmpty').hidden=list.length>0;$('#fab').hidden=list.length===0;
+  $('#homeEmpty').hidden=list.length>0;$('#fab').hidden=list.length===0;$('#homeSave').hidden=list.length===0;
+  var ban=$('#hbanner');ban.hidden=!LIB;
+  if(LIB)ban.textContent='📦 זהו קובץ שימור'+(LIB.saved?' שנשמר ב-'+new Date(LIB.saved).toLocaleDateString('he-IL'):'')+'. שינויים כאן (הוספה, מחיקה, עריכה) נכנסים לקובץ רק אחרי "שמירה לשימור" מחדש.';
   var df=new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'numeric',year:'2-digit'});
   $('#clist').innerHTML=list.map(function(c){
     var o=(c.people||[]).filter(function(p){return p!==c.owner;});
@@ -383,19 +456,27 @@ async function showHome(){
       '<div class="crow"><span class="cname" dir="auto">'+esc(c.title)+'</span><span class="cdate">'+(c.last?df.format(c.last):'')+'</span></div>'+
       '<div class="cwho" dir="auto">'+esc(who)+'</div><div class="cprev" dir="auto">'+esc(c.preview||'')+'</div></div></button>';
   }).join('');
-  var foot=ok?'השיחות שמורות רק בדפדפן במכשיר הזה. אם מנקים את נתוני הדפדפן או מחליפים מכשיר הן יימחקו, ולכן כדאי לשמור כל שיחה גם כקובץ שימור ("שמירה לשימור") ולגבות אותו.'
-    :'בסביבה הזו אי אפשר לשמור שיחות במכשיר. אפשר לצפות בשיחות ולשמור אותן כקובצי שימור.';
+  var foot=LIB?'השיחות מוצגות מתוך קובץ השימור. כדי להעביר אותן לאפליקציה בטלפון, טוענים את הקובץ הזה באפליקציה עם כפתור ה-+.'
+    :ok?'השיחות שמורות רק בדפדפן במכשיר הזה. אם מנקים את נתוני הדפדפן או מחליפים מכשיר הן יימחקו. לכן כדאי ללחוץ מדי פעם על "שמירה לשימור", שיוצר קובץ אחד עם כל השיחות, ולגבות אותו.'
+    :'בסביבה הזו אי אפשר לשמור שיחות במכשיר. אפשר לצפות בשיחות ולשמור אותן בקובץ שימור.';
   $('#hfoot').textContent=foot;
-  if(ok&&list.length&&navigator.storage&&navigator.storage.estimate){
+  if(!LIB&&ok&&list.length&&navigator.storage&&navigator.storage.estimate){
     try{var est=await navigator.storage.estimate();$('#hfoot').textContent=foot+' נפח בשימוש: '+fmtSize(est.usage||0)+'.';}catch(e){}
   }
+}
+/* Reads the chats inside a backup file. v1 files hold one chat, v2 files hold a list. */
+function archiveChats(d,srcFor){
+  var list=d.v===2?(d.chats||[]):[{meta:{title:d.title,owner:d.owner,note:d.note},messages:d.messages,media:d.media}];
+  return {v:d.v||1,saved:d.saved||0,chats:list.map(function(c){
+    var media=new Map();
+    Object.keys(c.media||{}).forEach(function(n){var s=srcFor(c.media[n]);if(s)media.set(n,s);});
+    return {meta:c.meta||{},msgs:c.messages||[],media:media};
+  })};
 }
 async function readArchiveFile(f){
   var doc=new DOMParser().parseFromString(await f.text(),'text/html'),dn=doc.getElementById('chat-data');
   if(!dn)throw new Error('הקובץ הזה אינו קובץ שימור של שומר השיחות.');
-  var d=JSON.parse(dn.textContent),media=new Map();
-  Object.keys(d.media||{}).forEach(function(n){var node=doc.getElementById(d.media[n]);if(node)media.set(n,{dataurl:node.textContent.trim()});});
-  return {d:d,media:media};
+  return archiveChats(JSON.parse(dn.textContent),function(id){var node=doc.getElementById(id);return node?{dataurl:node.textContent.trim()}:null;});
 }
 var urlCache=new Map();
 function mediaURL(n){
@@ -481,9 +562,16 @@ async function handleFiles(list){
     var files=Array.prototype.slice.call(list),arch=files.find(function(f){return /\.html?$/i.test(f.name);});
     if(arch){
       var a=await readArchiveFile(arch);
+      if(a.v!==1){
+        var r=await importChats(a.chats);
+        busy(null);await showHome();
+        toast((r.added?(r.added===1?'נוספה שיחה אחת':'נוספו '+r.added+' שיחות'):'לא נוספו שיחות')+(r.skipped?' · '+r.skipped+' כבר היו ברשימה':''));
+        return;
+      }
+      var c=a.chats[0];
       resetMedia();
-      S.media=a.media;S.id=null;S.archive=false;S.savedAt=0;S.note=a.d.note||'';
-      setup(a.d.messages||[],a.d.owner,a.d.title);
+      S.media=c.media;S.id=null;S.archive=false;S.savedAt=0;S.note=c.meta.note||'';
+      setup(c.msgs,c.meta.owner,c.meta.title);
     }else{
       var g=await gather(files);
       if(g.text===null)throw new Error('לא נמצא קובץ שיחה (TXT) בתוך מה שנבחר.');
@@ -712,46 +800,86 @@ function jumpTo(v){
 
 /* ---------- Saving a standalone archive ---------- */
 function usedMedia(){var u=[];var seen={};S.msgs.forEach(function(m){if(m.f)m.f.forEach(function(n){if(!seen[n]&&S.media.has(n)){seen[n]=1;u.push(n);}});});return u;}
-function openSave(){
-  var used=usedMedia(),missing=0,all=0,vid=0;
-  S.msgs.forEach(function(m){if(m.f)m.f.forEach(function(n){if(!S.media.has(n))missing++;});});
-  used.forEach(function(n){var s=srcSize(n);all+=s;if(kind(n)==='video')vid+=s;});
-  $('#dstats').textContent=S.msgs.length.toLocaleString('he-IL')+' הודעות, '+used.length+' קובצי מדיה'+(missing?' ('+missing+' קבצים לא נכללו בייצוא המקורי)':'')+'.';
-  $('#dsize').textContent='גודל משוער: '+fmtSize(all*1.34+200000)+(vid?' · בלי סרטונים: '+fmtSize((all-vid)*1.34+200000):'');
+/* Each entry is a chat that can go into the backup file; id null = the open chat that is not in the list. */
+var SAVE=[];
+function entryNames(e){
+  if(e.id==null)return usedMedia();
+  if(LIB){var c=libFind(e.id);return c?Array.from(c.media.keys()):[];}
+  return e.meta.media||[];
+}
+function entrySizes(e){
+  var all=0,vid=0;
+  entryNames(e).forEach(function(n){
+    var s=e.id==null?srcSize(n):LIB?sizeOf(libFind(e.id).media.get(n)):((e.meta.sizes||{})[n]||0);
+    all+=s;if(kind(n)==='video')vid+=s;
+  });
+  return {all:all,vid:vid};
+}
+function updateSaveSize(){
+  var all=0,vid=0,n=0;
+  SAVE.forEach(function(e,k){if($('#dlist input[data-k="'+k+'"]').checked){all+=e.sz.all;vid+=e.sz.vid;n++;}});
+  var inc=$('#incVideo').checked,size=(inc?all:all-vid)*1.34+200000;
+  $('#dsize').textContent=n?'נבחרו '+n+' שיחות · גודל משוער: '+fmtSize(size)+(inc&&vid?' (בלי סרטונים: '+fmtSize((all-vid)*1.34+200000)+')':''):'לא נבחרו שיחות';
+  $('#doSave').disabled=!n;
+}
+async function openSave(){
+  var metas=[];try{metas=await listChats();}catch(e){}
+  SAVE=metas.slice().sort(function(a,b){return b.last-a.last;}).map(function(m){return {id:m.id,meta:m};});
+  if(!S.id&&S.msgs.length&&!$('#chat').hidden)SAVE.unshift({id:null,meta:chatMeta(usedMedia())});
+  if(!SAVE.length){alert('אין עדיין שיחות לשמירה.');return;}
+  SAVE.forEach(function(e){e.sz=entrySizes(e);});
+  var df=new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'numeric',year:'2-digit'});
+  $('#dlist').innerHTML=SAVE.map(function(e,k){
+    return '<label><input type="checkbox" data-k="'+k+'" checked><span dir="auto">'+esc(e.meta.title||'שיחה')+
+      '<small>'+(e.meta.count||0).toLocaleString('he-IL')+' הודעות'+(e.meta.last?' · עד '+df.format(e.meta.last):'')+' · '+fmtSize(e.sz.all)+'</small></span></label>';
+  }).join('');
+  updateSaveSize();
   $('#dlg').showModal();
 }
 function blobToDataURL(b){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=function(){rej(r.error);};r.readAsDataURL(b);});}
-function archiveName(){
-  var o=others(),n;
-  if(S.owner&&o.length===1)n='וואטסאפ - '+S.owner+' עם '+o[0];
-  else n='וואטסאפ - '+S.title;
-  return n.replace(/[\\\/:*?"<>|\n\r]+/g,' ').trim().slice(0,120)+'.html';
+function safeName(n){return n.replace(/[\\\/:*?"<>|\n\r]+/g,' ').trim().slice(0,120)+'.html';}
+function archiveName(chats){
+  if(chats.length===1){
+    var m=chats[0].meta,o=(m.people||[]).filter(function(p){return p!==m.owner;});
+    return safeName(m.owner&&o.length===1?'וואטסאפ - '+m.owner+' עם '+o[0]:'וואטסאפ - '+m.title);
+  }
+  var d=new Date();
+  return safeName('שומר השיחות - גיבוי '+d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear());
 }
 async function saveArchive(incVideo){
-  var used=usedMedia().filter(function(n){return incVideo||kind(n)!=='video';});
-  var parts=[],index={};
+  var sel=SAVE.filter(function(e,k){return $('#dlist input[data-k="'+k+'"]').checked;});
+  if(!sel.length)return;
+  var parts=[],chats=[],mc=0;
   try{
-    for(var i=0;i<used.length;i++){
-      busy('אורז מדיה '+(i+1)+' מתוך '+used.length+'…');
-      var b=await getBlob(used[i]);if(!b)continue;
-      var id='m'+i;index[used[i]]=id;
-      parts.push('<script type="text/plain" id="'+id+'">',await blobToDataURL(b),'<\/script>\n');
+    for(var i=0;i<sel.length;i++){
+      var e=sel[i],c=e.id==null?{meta:chatMeta(usedMedia()),msgs:S.msgs,media:S.media}:await loadChat(e.id);
+      if(!c)continue;
+      var names=Array.from(c.media.keys()).filter(function(n){return incVideo||kind(n)!=='video';}),index={};
+      for(var j=0;j<names.length;j++){
+        busy('שומר את "'+(c.meta.title||'שיחה')+'" ('+(i+1)+'/'+sel.length+') · מדיה '+(j+1)+' מתוך '+names.length+'…');
+        var b=await blobOf(c.media.get(names[j]),names[j]);if(!b)continue;
+        var id='m'+(mc++);index[names[j]]=id;
+        // Wrapping each piece in a Blob right away keeps the large base64 strings out of memory.
+        parts.push(new Blob(['<script type="text/plain" id="'+id+'">',await blobToDataURL(b),'<\/script>\n']));
+      }
+      var meta=Object.assign({},c.meta);if(!meta.id)meta.id=newId();delete meta.media;delete meta.sizes;
+      chats.push({meta:meta,messages:c.msgs,media:index});
     }
     busy('יוצר את הקובץ…');
-    var saved=Date.now();
-    var data={v:1,title:S.title,owner:S.owner,note:S.note,saved:saved,messages:S.msgs,media:index};
+    var data={v:2,saved:Date.now(),chats:chats};
     var json=JSON.stringify(data).replace(/</g,'\\u003c');
-    var head='<!doctype html>\n<html lang="he" dir="rtl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>'+esc(S.title)+'</title>\n<style id="app-style">'+$('#app-style').textContent+'</style>\n</head>\n<body>\n';
+    var title=chats.length===1?chats[0].meta.title:'שומר השיחות - גיבוי';
+    var head='<!doctype html>\n<html lang="he" dir="rtl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>'+esc(title)+'</title>\n<style id="app-style">'+$('#app-style').textContent+'</style>\n</head>\n<body>\n';
     var out=[head,'<script type="application/json" id="chat-data">',json,'<\/script>\n'].concat(parts,['<script id="app-script">',$('#app-script').textContent,'<\/script>\n</body>\n</html>\n']);
-    var blob=new Blob(out,{type:'text/html;charset=utf-8'});
+    var blob=new Blob(out,{type:'text/html;charset=utf-8'}),fname=archiveName(chats);
     var dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
     if(dl){
       busy(null);
-      try{await dl.save({filename:archiveName(),data:blob});}
+      try{await dl.save({filename:fname,data:blob});}
       catch(err){if(err&&err.code!=='declined')throw new Error(err.message||err.code);}
       return;
     }
-    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=archiveName();
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;
     document.body.appendChild(a);a.click();a.remove();
     setTimeout(function(){URL.revokeObjectURL(a.href);},60000);
   }catch(e){console.error(e);alert('השמירה נכשלה: '+(e.message||e)+'\nאם הקובץ גדול מאוד, נסו לשמור בלי סרטונים, או השתמשו בקובץ הכלי שבמכשיר.');}
@@ -776,15 +904,17 @@ $('#info').addEventListener('close',async function(){
   updateHeader();
   if(changed){var sc=$('#scroller'),r=sc.scrollTop/Math.max(1,sc.scrollHeight);closeSearch();render();sc.scrollTop=r*sc.scrollHeight;}
   if(isNew){
-    try{await storeChat();toast('השיחה נשמרה במכשיר');}
-    catch(e){console.error(e);alert('לא הצלחתי לשמור את השיחה במכשיר ('+(e&&e.message||e)+'). אפשר עדיין לצפות בה ולשמור אותה כקובץ שימור.');}
+    try{await storeChat();toast(LIB?'השיחה נוספה. כדי שתיכנס לקובץ, לחצו "שמירה לשימור"':'השיחה נשמרה במכשיר');}
+    catch(e){console.error(e);alert('לא הצלחתי לשמור את השיחה במכשיר ('+(e&&e.message||e)+'). אפשר עדיין לצפות בה ולשמור אותה בקובץ שימור.');}
     finally{busy(null);}
-  }else if(S.id){try{await dbPut('chats',chatMeta(Array.from(S.media.keys())));}catch(e){console.error(e);}}
+  }else if(S.id){try{await updateMeta();}catch(e){console.error(e);}}
 });
 $('#infoDel').addEventListener('click',async function(){
-  if(!confirm('למחוק את השיחה "'+S.title+'" מהמכשיר?\nקובצי שימור שכבר שמרת לא יימחקו.'))return;
+  var msg=LIB?'להסיר את השיחה "'+S.title+'" מהרשימה?\nכדי שהיא תוסר גם מקובץ השימור, צריך אחר כך ללחוץ "שמירה לשימור" ולשמור קובץ חדש.'
+    :'למחוק את השיחה "'+S.title+'" מהמכשיר?\nקובצי שימור שכבר שמרת לא יימחקו.';
+  if(!confirm(msg))return;
   $('#info').close('cancel');
-  try{await deleteStored(S.id);}catch(e){alert('המחיקה נכשלה: '+(e.message||e));}
+  try{await removeChat(S.id);}catch(e){alert('המחיקה נכשלה: '+(e.message||e));}
   S.id=null;S.archive=true;resetMedia();showHome();
 });
 $('#searchBtn').addEventListener('click',function(){var h=$('#sbar').hidden;if(h){$('#sbar').hidden=false;$('#q').focus();}else closeSearch();});
@@ -795,6 +925,9 @@ $('#qdn').addEventListener('click',function(){step(1);});
 $('#qx').addEventListener('click',closeSearch);
 $('#jump').addEventListener('change',function(e){jumpTo(e.target.value);});
 $('#saveBtn').addEventListener('click',openSave);
+$('#homeSave').addEventListener('click',openSave);
+$('#dlist').addEventListener('change',updateSaveSize);
+$('#incVideo').addEventListener('change',updateSaveSize);
 $('#doSave').addEventListener('click',function(){saveArchive($('#incVideo').checked);});
 document.querySelectorAll('[data-help]').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();$('#help').showModal();});});
 $('#galBtn').addEventListener('click',openGallery);
@@ -816,11 +949,10 @@ document.addEventListener('keydown',function(e){
 var dataNode=document.getElementById('chat-data');
 if(dataNode){
   try{
-    var d=JSON.parse(dataNode.textContent);
-    S.media=new Map(Object.keys(d.media||{}).map(function(n){return [n,{embedded:d.media[n]}];}));
-    S.savedAt=d.saved||0;S.note=d.note||'';S.archive=true;S.id=null;
-    setup(d.messages||[],d.owner,d.title);
-  }catch(e){console.error(e);alert('לא הצלחתי לקרוא את הארכיון.');showHome();}
+    LIB=archiveChats(JSON.parse(dataNode.textContent),function(id){return document.getElementById(id)?{embedded:id}:null;});
+    LIB.chats.forEach(function(c){c.meta=metaFrom(c.msgs,Object.assign({},c.meta,{id:c.meta.id||newId()}));});
+    showHome().then(function(){if(LIB.chats.length===1)openStored(LIB.chats[0].meta.id);});
+  }catch(e){console.error(e);alert('לא הצלחתי לקרוא את קובץ השימור.');LIB=null;showHome();}
 }else{
   showHome();
   if(/[?&]shared=/.test(location.search)&&window.caches){
