@@ -148,6 +148,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .cwho{color:var(--accent);font-size:12.5px}
 .hfoot{max-width:720px;margin:0 auto;padding:14px 16px 100px;font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6}
 .fab{position:fixed;bottom:22px;inset-inline-end:22px;width:58px;height:58px;border-radius:16px;background:var(--accent);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer;z-index:5}
+.notice{background:var(--note);border:1px solid var(--border);border-inline-start:4px solid #f0b400;border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.55;margin:8px 0}
 .dlist{max-height:38vh;overflow:auto;border:1px solid var(--border);border-radius:8px;margin:10px 0}
 .dlist label{display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer}
 .dlist label:last-child{border-bottom:0}
@@ -199,7 +200,7 @@ var UI='<input id="pick" type="file" multiple hidden>'+
 '<p>במסך השיחות לוחצים על "הוספת שיחה" (או על כפתור ה-+) ובוחרים את קובץ ה-ZIP. אחר כך בוחרים מהטלפון של מי השיחה יוצאה, נותנים לה שם, ואם רוצים מוסיפים הערה. השיחה נשמרת ברשימה במכשיר.</p>'+
 '<p class="muted">באנדרואיד, אם הוספתם את שומר השיחות למסך הבית, אפשר לבחור בו ישירות ברשימת השיתוף שמופיעה בזמן הייצוא מוואטסאפ.</p>'+
 '<h3>שלב 3: שמירה לשימור</h3>'+
-'<p>לוחצים על "שמירה לשימור" ומקבלים קובץ אחד שמכיל את כל השיחות, כולל התמונות. אפשר לבחור אילו שיחות לכלול. את הקובץ אפשר לפתוח בכל דפדפן, גם בלי אינטרנט. כדאי לשמור אותו ביותר ממקום אחד, וגם את קובצי ה-ZIP המקוריים.</p>'+
+'<p>לוחצים על "שמירה לשימור" ומקבלים קובץ אחד שמכיל את כל השיחות, כולל התמונות. אפשר לבחור אילו שיחות לכלול. חשוב לדעת: זה גיבוי, צילום של המצב באותו רגע, והוא נפרד מהאפליקציה. שיחות שמוסיפים אחר כך לא נכנסות אליו, ולכן שומרים קובץ חדש אחרי כל שינוי. את הקובץ אפשר לפתוח בכל דפדפן, גם בלי אינטרנט. כדאי לשמור אותו ביותר ממקום אחד, וגם את קובצי ה-ZIP המקוריים.</p>'+
 '<p>בטלפון חדש, או אחרי שנתוני הדפדפן נמחקו, טוענים את קובץ השימור באפליקציה עם כפתור ה-+, וכל השיחות חוזרות לרשימה.</p>'+
 '<p class="muted">לפי מרכז העזרה של וואטסאפ, ייצוא עם מדיה כולל עד 10,000 ההודעות האחרונות, וייצוא בלי מדיה עד 40,000. הכל מעובד בתוך המכשיר, ושום דבר לא נשלח לשרת.</p>'+
 '<div class="dact"><button class="primary" value="ok">הבנתי</button></div></form></dialog>'+
@@ -209,11 +210,12 @@ var UI='<input id="pick" type="file" multiple hidden>'+
 '<label class="field"><span>הערה (לא חובה)</span><textarea id="fNote" dir="auto" placeholder="למשל: השיחה של אשתי עם נועה"></textarea></label>'+
 '<div class="dact"><button type="button" id="infoDel" class="ghost danger" hidden>מחיקה מהמכשיר</button><span class="spacer"></span><button class="ghost" value="cancel">ביטול</button><button id="infoOk" class="primary" value="ok">שמירה</button></div></form></dialog>'+
 '<dialog id="dlg"><form method="dialog" class="dcard"><h2>שמירה לשימור</h2>'+
-'<p class="muted">נוצר קובץ אחד עם כל השיחות שמסומנות כאן, כולל המדיה. פותחים אותו בכל דפדפן ורואים את רשימת השיחות. טעינה שלו בחזרה לאפליקציה (בכפתור ה-+) משחזרת את כולן.</p>'+
+'<div class="notice"><b>זה גיבוי, כלומר צילום של המצב עכשיו.</b> הקובץ שנוצר נפרד מהאפליקציה. שיחות שתוסיפו, תמחקו או תערכו כאן אחר כך לא ייכנסו אליו, ושינויים בקובץ לא יופיעו כאן. כדי שהגיבוי יהיה מעודכן, שומרים קובץ חדש אחרי כל שינוי, ואת הקובץ הישן אפשר למחוק.</div>'+
+'<p class="muted">הקובץ מכיל את כל השיחות שמסומנות כאן, כולל המדיה. פותחים אותו בכל דפדפן ורואים את רשימת השיחות. טעינה שלו בחזרה לאפליקציה (בכפתור ה-+) משחזרת את כולן.</p>'+
 '<div id="dlist" class="dlist"></div>'+
 '<label class="chk"><input type="checkbox" id="incVideo" checked> לכלול סרטונים</label>'+
 '<p id="dsize" class="muted"></p>'+
-'<p class="muted">כדאי לשמור את הקובץ ביותר ממקום אחד: Google Drive, מייל לעצמך, מחשב או דיסק חיצוני. כשמוסיפים שיחות חדשות, שומרים קובץ חדש.</p>'+
+'<p class="muted">כדאי לשמור את הקובץ ביותר ממקום אחד: Google Drive, מייל לעצמך, מחשב או דיסק חיצוני.</p>'+
 '<div class="dact"><button class="ghost" value="cancel">ביטול</button><button id="doSave" class="primary" value="ok">שמירה</button></div></form></dialog>'+
 '<div id="gallery" hidden><div class="gtop"><button id="gx" class="ib" title="חזרה לשיחה" aria-label="חזרה לשיחה">→</button><div class="gtitle">מדיה מהשיחה</div></div>'+
 '<div class="tabs"><button data-tab="visual">תמונות וסרטונים</button><button data-tab="audio">הקלטות</button><button data-tab="file">קבצים</button></div>'+
@@ -447,7 +449,7 @@ async function showHome(){
   list.sort(function(a,b){return b.last-a.last;});
   $('#homeEmpty').hidden=list.length>0;$('#fab').hidden=list.length===0;$('#homeSave').hidden=list.length===0;
   var ban=$('#hbanner');ban.hidden=!LIB;
-  if(LIB)ban.textContent='📦 זהו קובץ שימור'+(LIB.saved?' שנשמר ב-'+new Date(LIB.saved).toLocaleDateString('he-IL'):'')+'. שינויים כאן (הוספה, מחיקה, עריכה) נכנסים לקובץ רק אחרי "שמירה לשימור" מחדש.';
+  if(LIB)ban.textContent='📦 זהו קובץ גיבוי'+(LIB.saved?' שנשמר ב-'+new Date(LIB.saved).toLocaleDateString('he-IL'):'')+'. הוא נפרד מהאפליקציה, ומציג את השיחות כפי שהיו ברגע השמירה. שינויים כאן (הוספה, מחיקה, עריכה) לא נשמרים בקובץ הזה. כדי לשמור אותם, לוחצים "שמירה לשימור" ומקבלים קובץ חדש.';
   var df=new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'numeric',year:'2-digit'});
   $('#clist').innerHTML=list.map(function(c){
     var o=(c.people||[]).filter(function(p){return p!==c.owner;});
