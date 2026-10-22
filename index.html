@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>שומר השיחות</title>
+<meta name="theme-color" content="#008069">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style id="app-style">
+:root{--bg:#efeae2;--panel:#f0f2f5;--surface:#ffffff;--header:#008069;--header-text:#ffffff;--in:#ffffff;--out:#d9fdd3;--text:#111b21;--muted:#667781;--sys:#ffeecd;--day:#ffffff;--border:#d1d7db;--accent:#00a884;--link:#027eb5;--mark:#ffe08a;--note:#fff8e1;--shadow:rgba(11,20,26,.13)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b141a;--panel:#111b21;--surface:#1f2c34;--header:#202c33;--header-text:#e9edef;--in:#202c33;--out:#005c4b;--text:#e9edef;--muted:#8696a0;--sys:#182229;--day:#182229;--border:#2a3942;--accent:#00a884;--link:#53bdeb;--mark:#8a6d1a;--note:#2a2a1e;--shadow:rgba(0,0,0,.35)}}
+:root[data-theme="dark"]{--bg:#0b141a;--panel:#111b21;--surface:#1f2c34;--header:#202c33;--header-text:#e9edef;--in:#202c33;--out:#005c4b;--text:#e9edef;--muted:#8696a0;--sys:#182229;--day:#182229;--border:#2a3942;--accent:#00a884;--link:#53bdeb;--mark:#8a6d1a;--note:#2a2a1e;--shadow:rgba(0,0,0,.35)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;font-size:15px}
+button{font:inherit}
+.screen{height:100vh;height:100dvh}
+[hidden]{display:none!important}
+#welcome{display:flex;align-items:center;justify-content:center;padding:24px 16px;overflow:auto}
+.wcard{max-width:520px;width:100%;background:var(--surface);border-radius:16px;padding:32px 24px;box-shadow:0 2px 8px var(--shadow);text-align:center}
+.wicon{font-size:44px}
+h1{margin:8px 0;font-size:24px}
+.lead{color:var(--muted);line-height:1.6;margin:0}
+.drop{display:flex;flex-direction:column;gap:6px;border:2px dashed var(--accent);border-radius:12px;padding:28px 16px;margin:20px 0 12px;cursor:pointer}
+.drop.over{background:rgba(0,168,132,.1)}
+.dbig{font-weight:600;color:var(--accent);font-size:17px}
+.dsmall{font-size:13px;color:var(--muted)}
+.privacy{font-size:13px;color:var(--muted)}
+details{text-align:start;margin-top:16px;font-size:14px;line-height:1.6}
+summary{cursor:pointer;color:var(--accent);font-weight:600}
+#chat{display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:10px;background:var(--header);color:var(--header-text);padding:8px 12px;flex:none}
+.avatar{width:40px;height:40px;border-radius:50%;background:#dfe5e7;color:#54656f;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;flex:none}
+.tinfo{flex:1;min-width:0}
+.title{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:12.5px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{background:transparent;border:0;color:inherit;font-size:18px;width:40px;height:40px;border-radius:50%;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center}
+.ib:hover{background:rgba(127,127,127,.18)}
+.savebtn{background:#fff;color:#008069;border:0;border-radius:20px;padding:8px 14px;font-weight:600;cursor:pointer;flex:none}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:7px 16px;background:var(--panel);border-bottom:1px solid var(--border);font-size:13.5px;color:var(--muted);flex:none}
+.bar input,.sbar input{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px}
+.note{background:var(--note);color:var(--text);padding:8px 16px;font-size:14px;border-bottom:1px solid var(--border);white-space:pre-wrap;flex:none}
+.sbar{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--border);flex:none;color:var(--text)}
+.sbar input{flex:1;min-width:0}
+#qc{font-size:13px;color:var(--muted);min-width:48px;text-align:center}
+#scroller{flex:1;overflow-y:auto;padding:4px 0 24px}
+#list{max-width:920px;margin:0 auto;padding:0 16px}
+.day{content-visibility:auto;contain-intrinsic-size:auto 600px}
+.dlabel{text-align:center;margin:14px 0 8px;position:sticky;top:6px;z-index:2;pointer-events:none}
+.dlabel span{display:inline-block;background:var(--day);color:var(--muted);font-size:12.5px;padding:5px 12px;border-radius:8px;box-shadow:0 1px .5px var(--shadow)}
+.row{display:flex;margin:2px 0}
+.row.first{margin-top:10px}
+.row.out{justify-content:flex-end}
+.b{max-width:min(75%,560px);min-width:72px;background:var(--in);padding:6px 9px;border-radius:8px;box-shadow:0 1px .5px var(--shadow);overflow-wrap:anywhere}
+.out .b{background:var(--out)}
+.in.first .b{border-start-start-radius:0}
+.out.first .b{border-start-end-radius:0}
+.who{font-size:12.5px;font-weight:600;margin-bottom:2px}
+.txt{white-space:pre-wrap;line-height:1.45}
+.txt.omit{font-style:italic;color:var(--muted)}
+.meta{font-size:11px;color:var(--muted);text-align:end;margin-top:3px;line-height:1}
+.sys{text-align:center;margin:8px 0}
+.sys span{display:inline-block;background:var(--sys);color:var(--muted);font-size:12.5px;padding:5px 12px;border-radius:8px;max-width:85%;white-space:pre-wrap;box-shadow:0 1px .5px var(--shadow)}
+a{color:var(--link)}
+.media{width:260px;max-width:100%;border-radius:6px;overflow:hidden;margin-bottom:4px;background:rgba(127,127,127,.12);display:flex;align-items:center;justify-content:center}
+.k-image{height:260px}
+.k-image img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;display:block}
+.k-image.sticker{width:150px;height:150px;background:transparent}
+.k-image.sticker img{object-fit:contain}
+.k-video{height:200px;background:#000}
+.k-video video{width:100%;height:100%;display:block}
+.k-audio{width:280px;height:54px;background:transparent}
+.k-audio audio{width:100%}
+.k-file{height:48px}
+.ph{font-size:28px;opacity:.5}
+.file{padding:10px 12px;background:rgba(127,127,127,.12);border-radius:6px;margin-bottom:4px;display:flex;flex-direction:column;gap:2px;word-break:break-all;font-size:14px}
+.file small{color:var(--muted)}
+.row.hit .b,.sys.hit span{outline:2px solid var(--accent)}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+dialog{border:0;border-radius:14px;padding:0;background:var(--surface);color:var(--text);max-width:460px;width:calc(100% - 32px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dcard{padding:22px}
+.dcard h2{margin:0 0 12px;font-size:19px}
+.dcard p{line-height:1.55;margin:8px 0}
+.field{display:block;margin:12px 0}
+.field span{display:block;font-size:13.5px;color:var(--muted);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.field textarea{min-height:64px;resize:vertical}
+.chk{display:flex;gap:8px;align-items:center;margin:10px 0}
+.muted{color:var(--muted);font-size:13.5px}
+.dact{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.primary{background:var(--accent);color:#fff;border:0;border-radius:20px;padding:9px 20px;font-weight:600;cursor:pointer}
+.ghost{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:20px;padding:9px 18px;cursor:pointer}
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;flex-direction:column;z-index:50;color:#fff}
+.lbtop{display:flex;align-items:center;gap:8px;padding:8px 12px;flex:none}
+#lbcap{flex:1;min-width:0;font-size:14px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbbtn{background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:16px;padding:6px 12px;cursor:pointer;font-size:13.5px;flex:none}
+#lbstage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 8px 12px}
+#lbstage img,#lbstage video{max-width:100%;max-height:100%;object-fit:contain}
+.lbnav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);color:#fff;border:0;width:44px;height:44px;border-radius:50%;font-size:26px;line-height:1;cursor:pointer}
+#lbprev{inset-inline-start:10px}#lbnext{inset-inline-end:10px}
+.helpbtn{background:transparent;border:1px solid var(--border);color:var(--accent);border-radius:20px;padding:9px 16px;font-weight:600;cursor:pointer;margin-top:8px}
+#help{max-width:560px;max-height:calc(100dvh - 32px)}
+.hcard h3{font-size:15.5px;margin:18px 0 6px;color:var(--accent)}
+.hcard ol{margin:4px 0 8px;padding-inline-start:22px;line-height:1.6}
+.chip{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:16px;padding:4px 12px;cursor:pointer;font-size:13.5px}
+#gallery{position:fixed;inset:0;background:var(--bg);z-index:40;display:flex;flex-direction:column}
+.gtop{display:flex;align-items:center;gap:8px;background:var(--header);color:var(--header-text);padding:8px 12px;flex:none}
+.gtitle{font-weight:600;font-size:16px}
+.tabs{display:flex;background:var(--header);flex:none}
+.tabs button{flex:1;background:transparent;border:0;border-bottom:3px solid transparent;color:var(--header-text);opacity:.7;padding:10px 4px;cursor:pointer;font-size:14px}
+.tabs button.on{opacity:1;border-bottom-color:var(--header-text)}
+#gbody{flex:1;overflow-y:auto;padding:0 12px 24px}
+.gwrap{max-width:920px;margin:0 auto}
+.gmonth{font-size:13.5px;color:var(--muted);font-weight:600;margin:16px 4px 8px}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:3px}
+.gt{aspect-ratio:1;border:0;padding:0;background:rgba(127,127,127,.15);position:relative;overflow:hidden;cursor:pointer}
+.gt img,.gt video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.gt .badge{position:absolute;bottom:6px;inset-inline-start:6px;background:rgba(0,0,0,.6);color:#fff;border-radius:10px;padding:1px 7px;font-size:12px}
+.grow{background:var(--surface);border-radius:10px;padding:10px 12px;margin:6px 0;display:flex;flex-direction:column;gap:6px}
+.grow .media,.grow .file{margin:0}
+.ghead{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.ghead span{flex:1;min-width:0}
+.ghead .lbbtn{background:var(--panel);color:var(--accent)}
+.gempty{text-align:center;color:var(--muted);margin-top:40px}
+.row.flash .b{outline:3px solid var(--accent)}
+#busy{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
+.bcard{background:var(--surface);color:var(--text);padding:20px 24px;border-radius:12px;display:flex;gap:12px;align-items:center}
+.spin{width:22px;height:22px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .savebtn{background:var(--accent);color:#111b21}}
+:root[data-theme="dark"] .savebtn{background:var(--accent);color:#111b21}
+#home{display:flex;flex-direction:column}
+.htitle{flex:1;font-size:19px;font-weight:600;padding-inline-start:6px}
+#homeBody{flex:1;overflow-y:auto}
+#homeEmpty{display:flex;justify-content:center;padding:24px 16px}
+.clist{max-width:720px;margin:0 auto;background:var(--surface)}
+.citem{display:flex;gap:12px;align-items:center;padding:10px 16px;cursor:pointer;border:0;border-bottom:1px solid var(--border);background:none;width:100%;text-align:start;color:inherit}
+.citem:hover{background:var(--panel)}
+.cav{width:50px;height:50px;border-radius:50%;background:#dfe5e7;color:#54656f;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:20px;flex:none}
+.cmain{flex:1;min-width:0}
+.crow{display:flex;gap:8px;align-items:baseline}
+.cname{flex:1;min-width:0;font-weight:600;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cdate{font-size:12px;color:var(--muted);flex:none}
+.cwho,.cprev{font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cwho{color:var(--accent);font-size:12.5px}
+.hfoot{max-width:720px;margin:0 auto;padding:14px 16px 100px;font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6}
+.fab{position:fixed;bottom:22px;inset-inline-end:22px;width:58px;height:58px;border-radius:16px;background:var(--accent);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer;z-index:5}
+.danger{color:#d93025;border-color:#d93025}
+.spacer{flex:1}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;z-index:70;max-width:calc(100% - 32px);text-align:center}
+@media (max-width:560px){#list{padding:0 10px}.b{max-width:85%}.avatar{display:none}.sub{white-space:normal}.savebtn{padding:7px 10px;font-size:13px}.top{gap:4px;padding:8px 6px}}
+</style>
+</head>
+<body>
+<script id="app-script">
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s);};
+
+var UI='<input id="pick" type="file" multiple hidden>'+
+'<div id="home" class="screen"><header class="top"><div class="htitle">שומר השיחות</div>'+
+'<button class="ib" data-help title="הוראות לייצוא שיחה" aria-label="הוראות לייצוא שיחה">❓</button></header>'+
+'<div id="homeBody"><div id="homeEmpty" hidden><div class="wcard">'+
+'<div class="wicon">💬</div><h1>שומר השיחות</h1>'+
+'<p class="lead">שומרים כאן שיחות וואטסאפ שלא רוצים לאבד. רואים אותן כמו באפליקציה, ואפשר לשמור כל שיחה כקובץ שנפתח בכל דפדפן, גם בלי אינטרנט ובלי וואטסאפ.</p>'+
+'<label id="drop" class="drop" for="pick"><span class="dbig">הוספת שיחה</span><span class="dsmall">בוחרים קובץ ייצוא של וואטסאפ (ZIP או TXT) או קובץ שימור. אפשר גם לגרור לכאן.</span></label>'+
+'<p class="privacy">🔒 השיחות נשמרות רק במכשיר הזה ולא נשלחות לשום מקום.</p>'+
+'<button class="helpbtn" data-help>📖 הוראות: איך מייצאים שיחה מוואטסאפ</button>'+
+'</div></div><div id="clist" class="clist"></div><div id="hfoot" class="hfoot"></div></div>'+
+'<label class="fab" for="pick" id="fab" title="הוספת שיחה" aria-label="הוספת שיחה" hidden>+</label></div>'+
+'<div id="chat" class="screen" hidden>'+
+'<header class="top"><button id="back" class="ib" title="לרשימת השיחות" aria-label="לרשימת השיחות">→</button>'+
+'<div class="avatar" id="avatar"></div><div class="tinfo"><div id="title" class="title"></div><div id="sub" class="sub"></div></div>'+
+'<button class="ib" data-help title="הוראות לייצוא שיחה" aria-label="הוראות לייצוא שיחה">❓</button>'+
+'<button id="editBtn" class="ib" title="פרטי השיחה" aria-label="פרטי השיחה">✎</button>'+
+'<button id="searchBtn" class="ib" title="חיפוש" aria-label="חיפוש">🔍</button>'+
+'<button id="saveBtn" class="savebtn">שמירה לשימור</button></header>'+
+'<div id="note" class="note" dir="auto" hidden></div>'+
+'<div class="bar"><span id="range"></span><button id="galBtn" class="chip">🖼️ מדיה</button><label>קפיצה לתאריך: <input type="date" id="jump"></label></div>'+
+'<div class="sbar" id="sbar" hidden><input id="q" type="search" placeholder="חיפוש בשיחה" dir="auto"><span id="qc"></span>'+
+'<button id="qup" class="ib" title="הקודם">▲</button><button id="qdn" class="ib" title="הבא">▼</button><button id="qx" class="ib" title="סגירה">✕</button></div>'+
+'<main id="scroller"><div id="list"></div></main></div>'+
+'<dialog id="help"><form method="dialog" class="dcard hcard"><h2>איך שומרים שיחה מוואטסאפ</h2>'+
+'<h3>שלב 1: ייצוא השיחה מהטלפון</h3>'+
+'<p><b>באנדרואיד:</b></p><ol><li>פותחים בוואטסאפ את השיחה שרוצים לשמור.</li><li>לוחצים על שלוש הנקודות בפינה העליונה.</li><li>בוחרים "עוד" ואז "ייצוא צ׳אט".</li><li>בוחרים לכלול מדיה, כדי שגם התמונות וההקלטות יישמרו.</li><li>בוחרים איפה לשמור את הקובץ: Google Drive, הקבצים במכשיר, או מייל לעצמכם.</li></ol>'+
+'<p><b>באייפון:</b></p><ol><li>פותחים בוואטסאפ את השיחה שרוצים לשמור.</li><li>לוחצים על שם איש הקשר או הקבוצה בראש המסך.</li><li>גוללים למטה ובוחרים "ייצוא צ׳אט".</li><li>בוחרים לצרף מדיה.</li><li>שומרים את הקובץ, למשל ב"קבצים" או ב-iCloud, או שולחים אותו במייל לעצמכם.</li></ol>'+
+'<p class="muted">שמות התפריטים יכולים להשתנות מעט בין גרסאות של וואטסאפ. הקובץ שנוצר הוא קובץ ZIP. אין צורך לפתוח אותו לפני שטוענים אותו כאן.</p>'+
+'<h3>שלב 2: הוספה לשומר השיחות</h3>'+
+'<p>במסך השיחות לוחצים על "הוספת שיחה" (או על כפתור ה-+) ובוחרים את קובץ ה-ZIP. אחר כך בוחרים מהטלפון של מי השיחה יוצאה, נותנים לה שם, ואם רוצים מוסיפים הערה. השיחה נשמרת ברשימה במכשיר.</p>'+
+'<p class="muted">באנדרואיד, אם הוספתם את שומר השיחות למסך הבית, אפשר לבחור בו ישירות ברשימת השיתוף שמופיעה בזמן הייצוא מוואטסאפ.</p>'+
+'<h3>שלב 3: שמירה לשימור</h3>'+
+'<p>לוחצים על "שמירה לשימור" ומקבלים קובץ אחד שמכיל את כל השיחה, כולל התמונות. אפשר לפתוח אותו בכל דפדפן, גם בלי אינטרנט. כדאי לשמור אותו ביותר ממקום אחד, וגם את קובץ ה-ZIP המקורי.</p>'+
+'<p class="muted">לפי מרכז העזרה של וואטסאפ, ייצוא עם מדיה כולל עד 10,000 ההודעות האחרונות, וייצוא בלי מדיה עד 40,000. הכל מעובד בתוך המכשיר, ושום דבר לא נשלח לשרת.</p>'+
+'<div class="dact"><button class="primary" value="ok">הבנתי</button></div></form></dialog>'+
+'<dialog id="info"><form method="dialog" class="dcard"><h2>פרטי השיחה</h2>'+
+'<label class="field"><span>מהטלפון של מי השיחה יוצאה? (ההודעות שלו/ה יוצגו בירוק)</span><select id="fOwner"></select></label>'+
+'<label class="field"><span>שם השיחה</span><input id="fTitle" dir="auto"></label>'+
+'<label class="field"><span>הערה (לא חובה)</span><textarea id="fNote" dir="auto" placeholder="למשל: השיחה של אשתי עם נועה"></textarea></label>'+
+'<div class="dact"><button type="button" id="infoDel" class="ghost danger" hidden>מחיקה מהמכשיר</button><span class="spacer"></span><button class="ghost" value="cancel">ביטול</button><button id="infoOk" class="primary" value="ok">שמירה</button></div></form></dialog>'+
+'<dialog id="dlg"><form method="dialog" class="dcard"><h2>שמירת השיחה לשימור</h2>'+
+'<p id="dstats"></p><label class="chk"><input type="checkbox" id="incVideo" checked> לכלול סרטונים</label>'+
+'<p id="dsize" class="muted"></p>'+
+'<p class="muted">ייווצר קובץ HTML אחד שמכיל את כל ההודעות והמדיה, ואפשר לפתוח אותו בכל דפדפן. כדאי לשמור עותקים בכמה מקומות: Google Drive, מייל לעצמך, ומחשב או דיסק חיצוני. כדאי לשמור גם את קובץ הייצוא המקורי.</p>'+
+'<div class="dact"><button class="ghost" value="cancel">ביטול</button><button id="doSave" class="primary" value="ok">שמירה</button></div></form></dialog>'+
+'<div id="gallery" hidden><div class="gtop"><button id="gx" class="ib" title="חזרה לשיחה" aria-label="חזרה לשיחה">→</button><div class="gtitle">מדיה מהשיחה</div></div>'+
+'<div class="tabs"><button data-tab="visual">תמונות וסרטונים</button><button data-tab="audio">הקלטות</button><button data-tab="file">קבצים</button></div>'+
+'<div id="gbody"></div></div>'+
+'<div id="lightbox" hidden><div class="lbtop"><span id="lbcap"></span><button id="lbgo" class="lbbtn">מעבר להודעה</button><button id="lbx" class="ib" title="סגירה" aria-label="סגירה">✕</button></div>'+
+'<div id="lbstage"></div><button id="lbprev" class="lbnav" title="הקודם" aria-label="הקודם">›</button><button id="lbnext" class="lbnav" title="הבא" aria-label="הבא">‹</button></div>'+
+'<div id="busy" hidden><div class="bcard"><div class="spin"></div><div id="busyText"></div></div></div>'+
+'<div id="toast" hidden></div>';
+
+var NAME_COLORS=['#d4380d','#1677ff','#08979c','#c41d7f','#7cb305','#d48806','#722ed1','#cf1322','#389e0d','#0958d9'];
+var MIME={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',heic:'image/heic',mp4:'video/mp4',mov:'video/quicktime','3gp':'video/3gpp',webm:'video/webm',opus:'audio/ogg',ogg:'audio/ogg',m4a:'audio/mp4',mp3:'audio/mpeg',aac:'audio/aac',wav:'audio/wav',amr:'audio/amr',pdf:'application/pdf',vcf:'text/vcard',txt:'text/plain'};
+var KINDS={image:['jpg','jpeg','png','gif','webp','heic'],video:['mp4','mov','3gp','webm'],audio:['opus','ogg','m4a','mp3','aac','wav','amr']};
+var ICONS={image:'🖼️',video:'🎬',audio:'🎤',file:'📄'};
+
+var S={id:null,archive:false,added:0,title:'',note:'',owner:null,msgs:[],people:[],colors:{},media:new Map(),savedAt:0,nodes:[],matches:[],mi:-1,q:'',marked:null};
+
+function ext(n){var m=/\.([^.\/]+)$/.exec(n);return m?m[1].toLowerCase():'';}
+function kind(n){var e=ext(n);for(var k in KINDS)if(KINDS[k].indexOf(e)>=0)return k;return 'file';}
+function base(n){return n.split('/').pop();}
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return c==='&'?'&amp;':c==='<'?'&lt;':'&gt;';});}
+function escAttr(s){return esc(s).replace(/"/g,'&quot;');}
+function fmtSize(b){return b>=1e9?(b/1e9).toFixed(1)+' GB':b>=1e6?(b/1e6).toFixed(1)+' MB':Math.max(1,Math.round(b/1e3))+' KB';}
+function isHeb(s){return /^[֐-׿]/.test(s);}
+function le(name){return (isHeb(name)?'ל':'ל-')+name;}
+
+function busy(t){$('#busy').hidden=!t;if(t)$('#busyText').textContent=t;}
+
+/* ---------- ZIP reading (no external libraries) ---------- */
+function readSlice(file,start,end){return file.slice(start,end).arrayBuffer().then(function(b){return new Uint8Array(b);});}
+async function readZip(file){
+  var tailLen=Math.min(file.size,65557);
+  var tail=await readSlice(file,file.size-tailLen,file.size);
+  var dv=new DataView(tail.buffer),eocd=-1;
+  for(var i=tail.length-22;i>=0;i--){if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}}
+  if(eocd<0)throw new Error('קובץ ה-ZIP פגום או לא נתמך.');
+  var count=dv.getUint16(eocd+10,true),cdSize=dv.getUint32(eocd+12,true),cdOff=dv.getUint32(eocd+16,true);
+  if(cdOff===0xFFFFFFFF||count===0xFFFF||cdSize===0xFFFFFFFF){
+    var loc=eocd-20;
+    if(loc>=0&&dv.getUint32(loc,true)===0x07064b50){
+      var z64=Number(dv.getBigUint64(loc+8,true));
+      var z=await readSlice(file,z64,z64+56),zv=new DataView(z.buffer);
+      if(zv.getUint32(0,true)===0x06064b50){count=Number(zv.getBigUint64(32,true));cdSize=Number(zv.getBigUint64(40,true));cdOff=Number(zv.getBigUint64(48,true));}
+    }
+  }
+  var cd=await readSlice(file,cdOff,cdOff+cdSize),cv=new DataView(cd.buffer),dec=new TextDecoder(),entries=[],p=0;
+  for(var k=0;k<count&&p+46<=cd.length;k++){
+    if(cv.getUint32(p,true)!==0x02014b50)break;
+    var method=cv.getUint16(p+10,true),csize=cv.getUint32(p+20,true),usize=cv.getUint32(p+24,true);
+    var nlen=cv.getUint16(p+28,true),xlen=cv.getUint16(p+30,true),clen=cv.getUint16(p+32,true),off=cv.getUint32(p+42,true);
+    var name=dec.decode(cd.subarray(p+46,p+46+nlen));
+    var x=p+46+nlen,xend=x+xlen;
+    while(x+4<=xend){
+      var id=cv.getUint16(x,true),sz=cv.getUint16(x+2,true);
+      if(id===1){var q=x+4;
+        if(usize===0xFFFFFFFF){usize=Number(cv.getBigUint64(q,true));q+=8;}
+        if(csize===0xFFFFFFFF){csize=Number(cv.getBigUint64(q,true));q+=8;}
+        if(off===0xFFFFFFFF){off=Number(cv.getBigUint64(q,true));}}
+      x+=4+sz;
+    }
+    if(!/\/$/.test(name)&&!/(^|\/)__MACOSX\//.test(name))entries.push({name:name,method:method,csize:csize,usize:usize,off:off});
+    p+=46+nlen+xlen+clen;
+  }
+  return entries;
+}
+async function zipEntryBlob(file,e,type){
+  var h=await readSlice(file,e.off,e.off+30),hv=new DataView(h.buffer);
+  if(hv.getUint32(0,true)!==0x04034b50)throw new Error('רשומה פגומה ב-ZIP');
+  var start=e.off+30+hv.getUint16(26,true)+hv.getUint16(28,true);
+  var raw=file.slice(start,start+e.csize);
+  if(e.method===0)return new Blob([raw],{type:type});
+  if(e.method===8){
+    if(typeof DecompressionStream==='undefined')throw new Error('הדפדפן הזה ישן מדי לפתיחת ZIP. נסו Chrome או Firefox עדכניים.');
+    var s=raw.stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Blob([await new Response(s).arrayBuffer()],{type:type});
+  }
+  throw new Error('שיטת דחיסה לא נתמכת');
+}
+
+/* ---------- Media access ---------- */
+function mimeOf(n){return MIME[ext(n)]||'application/octet-stream';}
+async function getBlob(n){
+  var src=S.media.get(n);if(!src)return null;
+  if(src.embedded){var node=document.getElementById(src.embedded);if(!node)return null;return await (await fetch(node.textContent.trim())).blob();}
+  if(src.dataurl)return await (await fetch(src.dataurl)).blob();
+  if(src.db)return (await dbGet('media',src.db+'/'+n))||null;
+  if(src.file)return new Blob([src.file],{type:mimeOf(n)});
+  return zipEntryBlob(src.zip,src.entry,mimeOf(n));
+}
+function srcSize(n){
+  var src=S.media.get(n);if(!src)return 0;
+  if(src.entry)return src.entry.usize;
+  if(src.file)return src.file.size;
+  if(src.dataurl)return src.dataurl.length*0.75;
+  if(src.db)return src.size||0;
+  var node=document.getElementById(src.embedded);return node?node.textContent.length*0.75:0;
+}
+
+/* ---------- Chats stored on this device (IndexedDB) ---------- */
+var dbp=null;
+function idb(){
+  if(!dbp)dbp=new Promise(function(res,rej){
+    try{var r=indexedDB.open('chat-keeper',1);
+      r.onupgradeneeded=function(){var d=r.result;d.createObjectStore('chats',{keyPath:'id'});d.createObjectStore('msgs');d.createObjectStore('media');};
+      r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};r.onblocked=function(){rej(new Error('blocked'));};
+    }catch(e){rej(e);}
+  });
+  return dbp;
+}
+function dbReq(store,mode,fn){
+  return idb().then(function(d){return new Promise(function(res,rej){
+    var t=d.transaction(store,mode),r=fn(t.objectStore(store)),out;
+    if(r)r.onsuccess=function(){out=r.result;};
+    t.oncomplete=function(){res(out);};t.onerror=function(){rej(t.error);};t.onabort=function(){rej(t.error||new Error('השמירה בוטלה'));};
+  });});
+}
+function dbGet(st,k){return dbReq(st,'readonly',function(s){return s.get(k);});}
+function dbPut(st,v,k){return dbReq(st,'readwrite',function(s){return k===undefined?s.put(v):s.put(v,k);});}
+function dbAll(st){return dbReq(st,'readonly',function(s){return s.getAll();});}
+function dbDel(st,k){return dbReq(st,'readwrite',function(s){return s.delete(k);});}
+
+function previewOf(m){
+  if(!m)return '';
+  var t=m.x?m.x.replace(/\s+/g,' ').slice(0,90):m.f?ICONS[kind(m.f[0])]+' '+({image:'תמונה',video:'סרטון',audio:'הקלטה',file:'קובץ'})[kind(m.f[0])]:'';
+  return (m.s?m.s+': ':'')+t;
+}
+function chatMeta(names){
+  var last=S.msgs[S.msgs.length-1];
+  return {id:S.id,title:S.title,owner:S.owner,note:S.note,people:S.people,count:S.msgs.length,
+    first:S.msgs.length?S.msgs[0].t:0,last:last?last.t:0,preview:previewOf(last),added:S.added||Date.now(),
+    media:names||Array.from(S.media.keys()),sizes:S.sizes||{}};
+}
+async function storeChat(){
+  var id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),used=usedMedia(),kept=[],sizes={};
+  try{
+    for(var i=0;i<used.length;i++){
+      busy('שומר במכשיר: מדיה '+(i+1)+' מתוך '+used.length+'…');
+      var b=await getBlob(used[i]);
+      if(b){await dbPut('media',b,id+'/'+used[i]);kept.push(used[i]);sizes[used[i]]=b.size;}
+    }
+    busy('שומר את ההודעות…');
+    await dbPut('msgs',S.msgs,id);
+    S.id=id;S.added=Date.now();S.sizes=sizes;
+    await dbPut('chats',chatMeta(kept));
+  }catch(e){S.id=null;await deleteStored(id).catch(function(){});throw e;}
+  S.media=new Map(kept.map(function(n){return [n,{db:id,size:sizes[n]}];}));
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+}
+async function deleteStored(id){
+  await dbReq('media','readwrite',function(s){return s.delete(IDBKeyRange.bound(id+'/',id+'/￿'));});
+  await dbDel('msgs',id);await dbDel('chats',id);
+}
+async function openStored(id){
+  busy('פותח את השיחה…');
+  try{
+    var m=await dbGet('chats',id),msgs=await dbGet('msgs',id);
+    if(!m||!msgs)throw new Error('השיחה לא נמצאה במכשיר.');
+    resetMedia();
+    S.media=new Map((m.media||[]).map(function(n){return [n,{db:id,size:(m.sizes||{})[n]}];}));
+    S.id=id;S.archive=false;S.added=m.added;S.note=m.note||'';S.savedAt=0;S.sizes=m.sizes||{};
+    setup(msgs,m.owner,m.title);
+  }catch(e){alert(e.message||String(e));}
+  finally{busy(null);}
+}
+function toast(t){var n=$('#toast');n.textContent=t;n.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){n.hidden=true;},3500);}
+async function showHome(){
+  closeViewer();$('#gallery').hidden=true;
+  $('#chat').hidden=true;$('#home').hidden=false;document.title='שומר השיחות';
+  var list=[],ok=true;
+  try{list=await dbAll('chats');}catch(e){ok=false;}
+  list.sort(function(a,b){return b.last-a.last;});
+  $('#homeEmpty').hidden=list.length>0;$('#fab').hidden=list.length===0;
+  var df=new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'numeric',year:'2-digit'});
+  $('#clist').innerHTML=list.map(function(c){
+    var o=(c.people||[]).filter(function(p){return p!==c.owner;});
+    var who=c.owner?(o.length===1?c.owner+' עם '+o[0]:'קבוצה')+' · מהטלפון של '+c.owner:'';
+    return '<button class="citem" data-id="'+escAttr(c.id)+'"><div class="cav">'+esc((c.title||'?').trim().charAt(0))+'</div><div class="cmain">'+
+      '<div class="crow"><span class="cname" dir="auto">'+esc(c.title)+'</span><span class="cdate">'+(c.last?df.format(c.last):'')+'</span></div>'+
+      '<div class="cwho" dir="auto">'+esc(who)+'</div><div class="cprev" dir="auto">'+esc(c.preview||'')+'</div></div></button>';
+  }).join('');
+  var foot=ok?'השיחות שמורות רק בדפדפן במכשיר הזה. אם מנקים את נתוני הדפדפן או מחליפים מכשיר הן יימחקו, ולכן כדאי לשמור כל שיחה גם כקובץ שימור ("שמירה לשימור") ולגבות אותו.'
+    :'בסביבה הזו אי אפשר לשמור שיחות במכשיר. אפשר לצפות בשיחות ולשמור אותן כקובצי שימור.';
+  $('#hfoot').textContent=foot;
+  if(ok&&list.length&&navigator.storage&&navigator.storage.estimate){
+    try{var est=await navigator.storage.estimate();$('#hfoot').textContent=foot+' נפח בשימוש: '+fmtSize(est.usage||0)+'.';}catch(e){}
+  }
+}
+async function readArchiveFile(f){
+  var doc=new DOMParser().parseFromString(await f.text(),'text/html'),dn=doc.getElementById('chat-data');
+  if(!dn)throw new Error('הקובץ הזה אינו קובץ שימור של שומר השיחות.');
+  var d=JSON.parse(dn.textContent),media=new Map();
+  Object.keys(d.media||{}).forEach(function(n){var node=doc.getElementById(d.media[n]);if(node)media.set(n,{dataurl:node.textContent.trim()});});
+  return {d:d,media:media};
+}
+var urlCache=new Map();
+function mediaURL(n){
+  if(!urlCache.has(n))urlCache.set(n,getBlob(n).then(function(b){return b?URL.createObjectURL(b):null;}));
+  return urlCache.get(n);
+}
+function resetMedia(){urlCache.forEach(function(p){p.then(function(u){if(u)URL.revokeObjectURL(u);}).catch(function(){});});urlCache=new Map();}
+
+/* ---------- Parsing the exported text ---------- */
+var BIDI=/[‎‏‪-‮⁦-⁩﻿]/g;
+var AMPM='([AaPp]\\.?\\s?[Mm]\\.?|לפנה["״׳\']?צ|אחה["״׳\']?צ)';
+var DT='(\\d{1,4})[./-](\\d{1,2})[./-](\\d{2,4}),?\\s+(\\d{1,2})[:.](\\d{2})(?:[:.](\\d{2}))?(?:\\s*'+AMPM+')?';
+var RE_IOS=new RegExp('^\\['+DT+'\\]\\s*(.*)$');
+var RE_AND=new RegExp('^'+DT+'\\s*[-–]\\s(.*)$');
+var RE_SENDER=/^([^:\n]{1,80}?):(?: |\n|$)([\s\S]*)$/;
+var RE_MARK_IOS=/^<[^<>:]+:\s*([^<>]+?)>$/;
+var RE_MARK_AND=/^(\S.*?\.[A-Za-z0-9]{2,5}) \(([^()]+)\)$/;
+
+function parseChat(text,media){
+  var lines=text.replace(/\r\n?/g,'\n').split('\n'),raw=[],cur=null;
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].replace(BIDI,'');
+    var m=RE_IOS.exec(line)||RE_AND.exec(line);
+    if(m){cur={a:+m[1],b:+m[2],c:+m[3],h:+m[4],mi:+m[5],s:m[6]?+m[6]:0,ap:m[7]||'',rest:m[8]};raw.push(cur);}
+    else if(cur)cur.rest+='\n'+line;
+  }
+  var order='dmy';
+  if(raw.some(function(r){return r.a>31;}))order='ymd';
+  else if(raw.some(function(r){return r.a>12;}))order='dmy';
+  else if(raw.some(function(r){return r.b>12;}))order='mdy';
+  var msgs=[],lastT=0;
+  raw.forEach(function(r){
+    var d,mo,y;
+    if(order==='ymd'){y=r.a;mo=r.b;d=r.c;}else if(order==='mdy'){mo=r.a;d=r.b;y=r.c;}else{d=r.a;mo=r.b;y=r.c;}
+    if(y<100)y+=2000;
+    var h=r.h,ap=r.ap.toLowerCase();
+    if(ap){var pm=ap.charAt(0)==='p'||ap.indexOf('אחה')===0;if(pm&&h<12)h+=12;if(!pm&&h===12)h=0;}
+    var t=new Date(y,mo-1,d,h,r.mi,r.s).getTime();
+    if(isNaN(t))t=lastT;lastT=t;
+    var msg={t:t},body=r.rest,sm=RE_SENDER.exec(r.rest);
+    if(sm){msg.s=sm[1].trim();body=sm[2];}
+    var files=[],keep=[];
+    body.split('\n').forEach(function(ln){
+      var tl=ln.trim(),name=null,mm;
+      if((mm=RE_MARK_IOS.exec(tl))&&/\.[A-Za-z0-9]{2,5}$/.test(mm[1].trim()))name=mm[1].trim();
+      else if((mm=RE_MARK_AND.exec(tl))&&(media.has(mm[1])||/attach|מצורף/i.test(mm[2])))name=mm[1];
+      else if(tl&&media.has(tl))name=tl;
+      if(name)files.push(name);else keep.push(ln);
+    });
+    var txt=keep.join('\n').replace(/^\n+|\s+$/g,'');
+    if(files.length)msg.f=files;
+    if(txt)msg.x=txt;
+    if(msg.s&&!files.length&&/^<[^<>]+>$/.test(txt))msg.o=1;
+    if(msg.x||msg.f)msgs.push(msg);
+  });
+  return msgs;
+}
+
+/* ---------- Loading files ---------- */
+async function gather(files){
+  var text=null,name='',media=new Map();
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    if(/\.zip$/i.test(f.name)){
+      var entries=await readZip(f);
+      var txts=entries.filter(function(e){return /\.txt$/i.test(e.name);});
+      var chosen=txts.find(function(e){return /(^|\/)_chat\.txt$/i.test(e.name);})||txts.find(function(e){return /whatsapp|וואטסאפ|צ.?אט/i.test(e.name);})||txts.slice().sort(function(a,b){return b.usize-a.usize;})[0];
+      entries.forEach(function(e){if(e!==chosen||text!==null)media.set(base(e.name),{zip:f,entry:e});});
+      if(chosen&&text===null){text=await (await zipEntryBlob(f,chosen,'text/plain')).text();name=/(^|\/)_chat\.txt$/i.test(chosen.name)?f.name:base(chosen.name);}
+    }else if(/\.txt$/i.test(f.name)&&text===null){text=await f.text();name=f.name;}
+    else media.set(f.name,{file:f});
+  }
+  return {text:text,name:name,media:media};
+}
+function deriveTitle(n){
+  var t=n.replace(/\.(zip|txt)$/i,'').replace(/^WhatsApp Chat (with|-)\s*/i,'').replace(/^צ.?אט (WhatsApp|וואטסאפ) עם\s*/,'').replace(/^_chat$/,'');
+  return t.trim();
+}
+async function handleFiles(list){
+  if(!list||!list.length)return;
+  busy('קורא את הקובץ…');
+  try{
+    var files=Array.prototype.slice.call(list),arch=files.find(function(f){return /\.html?$/i.test(f.name);});
+    if(arch){
+      var a=await readArchiveFile(arch);
+      resetMedia();
+      S.media=a.media;S.id=null;S.archive=false;S.savedAt=0;S.note=a.d.note||'';
+      setup(a.d.messages||[],a.d.owner,a.d.title);
+    }else{
+      var g=await gather(files);
+      if(g.text===null)throw new Error('לא נמצא קובץ שיחה (TXT) בתוך מה שנבחר.');
+      var msgs=parseChat(g.text,g.media);
+      if(!msgs.length)throw new Error('לא הצלחתי לזהות הודעות בקובץ. האם זה קובץ ייצוא של וואטסאפ?');
+      resetMedia();
+      S.media=g.media;S.id=null;S.archive=false;S.savedAt=0;S.note='';
+      setup(msgs,null,deriveTitle(g.name));
+    }
+    busy(null);
+    openInfo();
+  }catch(e){busy(null);console.error(e);alert(e.message||String(e));}
+}
+
+/* ---------- Setting up a chat ---------- */
+function setup(msgs,owner,title){
+  S.msgs=msgs;
+  var cnt=new Map();msgs.forEach(function(m){if(m.s!=null)cnt.set(m.s,(cnt.get(m.s)||0)+1);});
+  S.people=Array.from(cnt.entries()).sort(function(a,b){return b[1]-a[1];}).map(function(e){return e[0];});
+  S.colors={};S.people.forEach(function(p,i){S.colors[p]=NAME_COLORS[i%NAME_COLORS.length];});
+  S.title=title||'';
+  S.owner=owner&&S.people.indexOf(owner)>=0?owner:guessOwner(S.title);
+  if(!S.title)S.title=defaultTitle();
+  $('#home').hidden=true;$('#chat').hidden=false;
+  closeSearch();
+  updateHeader();render();
+  requestAnimationFrame(function(){var sc=$('#scroller');sc.scrollTop=sc.scrollHeight;requestAnimationFrame(function(){sc.scrollTop=sc.scrollHeight;});});
+}
+function guessOwner(t){
+  var p=S.people;
+  if(p.length===2&&t){
+    if(p[0]===t||p[0].indexOf(t)>=0||t.indexOf(p[0])>=0)return p[1];
+    if(p[1]===t||p[1].indexOf(t)>=0||t.indexOf(p[1])>=0)return p[0];
+  }
+  return p[0]||null;
+}
+function others(){return S.people.filter(function(p){return p!==S.owner;});}
+function defaultTitle(){var o=others();return o.length===1?o[0]:(o.length?'שיחה קבוצתית':'שיחה');}
+function between(){
+  if(!S.owner)return '';
+  var o=others();
+  if(o.length===1)return 'שיחה בין '+S.owner+' '+le(o[0]);
+  if(o.length===0)return 'הודעות של '+S.owner;
+  return 'קבוצה: '+S.people.join(', ');
+}
+function updateHeader(){
+  $('#title').textContent=S.title;
+  $('#avatar').textContent=(S.title||'?').trim().charAt(0);
+  var parts=[between()];
+  if(S.owner)parts.push('מהטלפון של '+S.owner);
+  if(S.savedAt)parts.push('נשמר '+new Date(S.savedAt).toLocaleDateString('he-IL'));
+  $('#sub').textContent=parts.filter(Boolean).join(' · ');
+  $('#sub').title=$('#sub').textContent;
+  var n=$('#note');n.hidden=!S.note;n.textContent=S.note;
+  var df=new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'short',year:'numeric'});
+  if(S.msgs.length){
+    var a=S.msgs[0].t,b=S.msgs[S.msgs.length-1].t;
+    $('#range').textContent=S.msgs.length.toLocaleString('he-IL')+' הודעות · '+df.format(a)+' עד '+df.format(b);
+  }
+  document.title=S.title+' · שומר השיחות';
+}
+function openInfo(){
+  var sel=$('#fOwner');sel.innerHTML='';
+  S.people.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;if(p===S.owner)o.selected=true;sel.appendChild(o);});
+  $('#fTitle').value=S.title;$('#fNote').value=S.note;
+  $('#infoDel').hidden=!S.id;
+  $('#info').returnValue='';
+  $('#info').showModal();
+}
+
+/* ---------- Rendering ---------- */
+function fmtText(s){
+  var h=esc(s);
+  h=h.replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g,'$1<b>$2</b>');
+  h=h.replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?:;])/g,'$1<i>$2</i>');
+  h=h.replace(/(^|[\s(])~([^~\n]+)~(?=$|[\s).,!?:;])/g,'$1<s>$2</s>');
+  h=h.replace(/(https?:\/\/[^\s<"]+[^\s<".,:;'!?)\]])/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+  return h;
+}
+function highlight(s,q){
+  var low=s.toLowerCase(),out='',i=0,j;
+  while((j=low.indexOf(q,i))>=0){out+=esc(s.slice(i,j))+'<mark>'+esc(s.slice(j,j+q.length))+'</mark>';i=j+q.length;}
+  return out+esc(s.slice(i));
+}
+function mediaBox(n){
+  if(!S.media.has(n))return '<div class="file">📎 '+esc(n)+'<small>הקובץ לא נכלל בייצוא</small></div>';
+  var k=kind(n),sticker=ext(n)==='webp'?' sticker':'';
+  return '<div class="media k-'+k+sticker+'" data-name="'+escAttr(n)+'"><span class="ph">'+ICONS[k]+'</span></div>';
+}
+var io=null;
+function render(){
+  var multi=S.people.length>2;
+  var dayFmt=new Intl.DateTimeFormat('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  var timeFmt=new Intl.DateTimeFormat('he-IL',{hour:'2-digit',minute:'2-digit'});
+  var html=[],day='',prev,open=false;
+  S.msgs.forEach(function(m,i){
+    var d=new Date(m.t),key=d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
+    if(key!==day){
+      if(open)html.push('</section>');
+      var sod=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+      html.push('<section class="day" data-t="'+sod+'"><div class="dlabel"><span>'+esc(dayFmt.format(d))+'</span></div>');
+      open=true;day=key;prev=undefined;
+    }
+    if(m.s==null){html.push('<div class="sys" data-i="'+i+'"><span dir="auto">'+fmtText(m.x||'')+'</span></div>');prev=undefined;return;}
+    var mine=m.s===S.owner,first=m.s!==prev;prev=m.s;
+    var inner='';
+    if(first&&(!mine||multi))inner+='<div class="who" style="color:'+(S.colors[m.s]||'inherit')+'" dir="auto">'+esc(m.s)+'</div>';
+    if(m.f)m.f.forEach(function(n){inner+=mediaBox(n);});
+    if(m.x)inner+='<div class="txt'+(m.o?' omit':'')+'" dir="auto">'+fmtText(m.x)+'</div>';
+    inner+='<div class="meta">'+timeFmt.format(d)+'</div>';
+    html.push('<div class="row '+(mine?'out':'in')+(first?' first':'')+'" data-i="'+i+'"><div class="b">'+inner+'</div></div>');
+  });
+  if(open)html.push('</section>');
+  var list=$('#list');list.innerHTML=html.join('');
+  S.nodes=[];list.querySelectorAll('[data-i]').forEach(function(n){S.nodes[+n.dataset.i]=n;});
+  if(io)io.disconnect();
+  io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){io.unobserve(e.target);fillMedia(e.target);}});},{root:$('#scroller'),rootMargin:'800px 0px'});
+  list.querySelectorAll('.media').forEach(function(n){io.observe(n);});
+}
+/* ---------- Media gallery and viewer ---------- */
+function mediaList(){var L=[];S.msgs.forEach(function(m,i){if(m.f)m.f.forEach(function(n){if(S.media.has(n))L.push({n:n,i:i,k:kind(n)});});});return L;}
+function visual(L){return L.filter(function(x){return x.k==='image'||x.k==='video';});}
+var LB={list:[],idx:0};
+function fullDate(t){return new Date(t).toLocaleString('he-IL',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function openFrom(n,i){var L=visual(mediaList()),j=L.findIndex(function(x){return x.n===n&&x.i===i;});openViewer(L,j<0?0:j);}
+function openViewer(list,idx){if(!list.length)return;LB.list=list;LB.idx=idx;$('#lightbox').hidden=false;showViewer();}
+async function showViewer(){
+  var it=LB.list[LB.idx],st=$('#lbstage'),m=S.msgs[it.i];
+  st.innerHTML='';
+  $('#lbcap').textContent=(m.s?m.s+' · ':'')+fullDate(m.t)+'  ('+(LB.idx+1)+'/'+LB.list.length+')';
+  $('#lbprev').hidden=LB.idx<=0;$('#lbnext').hidden=LB.idx>=LB.list.length-1;
+  var url=null;try{url=await mediaURL(it.n);}catch(e){}
+  if(LB.list[LB.idx]!==it||$('#lightbox').hidden)return;
+  if(!url){st.textContent='לא ניתן לפתוח את הקובץ';return;}
+  var el=document.createElement(it.k==='video'?'video':'img');
+  if(it.k==='video'){el.controls=true;el.autoplay=true;}
+  el.src=url;st.appendChild(el);
+}
+function lbStep(d){var j=LB.idx+d;if(j<0||j>=LB.list.length)return;LB.idx=j;showViewer();}
+function closeViewer(){$('#lightbox').hidden=true;$('#lbstage').innerHTML='';}
+function goToMsg(i){
+  closeViewer();$('#gallery').hidden=true;
+  var node=S.nodes[i];if(!node)return;
+  node.scrollIntoView({block:'center'});node.classList.add('flash');
+  setTimeout(function(){node.classList.remove('flash');},1800);
+}
+var gio=null;
+function openGallery(){$('#gallery').hidden=false;renderGallery(S.gtab||'visual');}
+function renderGallery(tab){
+  S.gtab=tab;
+  var all=mediaList(),groups={visual:visual(all),audio:all.filter(function(x){return x.k==='audio';}),file:all.filter(function(x){return x.k==='file';})};
+  var names={visual:'תמונות וסרטונים',audio:'הקלטות',file:'קבצים'};
+  document.querySelectorAll('.tabs button').forEach(function(b){var t=b.dataset.tab;b.classList.toggle('on',t===tab);b.textContent=names[t]+' ('+groups[t].length+')';});
+  var items=groups[tab],body=$('#gbody');
+  if(gio)gio.disconnect();
+  if(!items.length){body.innerHTML='<p class="gempty">אין פריטים מהסוג הזה בשיחה</p>';return;}
+  var mf=new Intl.DateTimeFormat('he-IL',{month:'long',year:'numeric'}),html=['<div class="gwrap">'],month='',open=false;
+  for(var j=items.length-1;j>=0;j--){
+    var it=items[j],m=S.msgs[it.i],mo=mf.format(m.t);
+    if(mo!==month){if(open&&tab==='visual')html.push('</div>');html.push('<h3 class="gmonth">'+esc(mo)+'</h3>');if(tab==='visual')html.push('<div class="ggrid">');month=mo;open=true;}
+    if(tab==='visual')html.push('<button class="gt" data-j="'+j+'" data-name="'+escAttr(it.n)+'">'+(it.k==='video'?'<span class="badge">▶</span>':'')+'</button>');
+    else html.push('<div class="grow"><div class="ghead"><span dir="auto">'+esc((m.s?m.s+' · ':'')+fullDate(m.t))+'</span><button class="lbbtn" data-go="'+it.i+'">מעבר להודעה</button></div>'+mediaBox(it.n)+'</div>');
+  }
+  if(open&&tab==='visual')html.push('</div>');
+  html.push('</div>');
+  body.innerHTML=html.join('');body.scrollTop=0;
+  gio=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;gio.unobserve(e.target);
+    if(e.target.classList.contains('gt'))fillTile(e.target);else fillMedia(e.target);});},{root:body,rootMargin:'600px 0px'});
+  body.querySelectorAll('.gt,.media').forEach(function(n){gio.observe(n);});
+  body.onclick=function(e){
+    var t=e.target.closest('.gt');if(t){openViewer(items,+t.dataset.j);return;}
+    var g=e.target.closest('[data-go]');if(g)goToMsg(+g.dataset.go);
+  };
+}
+async function fillTile(tile){
+  var n=tile.dataset.name,url=null;try{url=await mediaURL(n);}catch(e){}
+  if(!url)return;
+  var el;
+  if(kind(n)==='video'){el=document.createElement('video');el.muted=true;el.preload='metadata';el.src=url+'#t=0.1';}
+  else{el=new Image();el.alt='';el.src=url;}
+  tile.insertBefore(el,tile.firstChild);
+}
+
+function asFile(box,n,url){box.className='file';box.innerHTML='<a href="'+escAttr(url)+'" download="'+escAttr(n)+'">📄 '+esc(n)+'</a>';}
+async function fillMedia(box){
+  var n=box.dataset.name,k=kind(n),url=null;
+  try{url=await mediaURL(n);}catch(e){console.error(e);}
+  if(!url){box.className='file';box.innerHTML='📎 '+esc(n)+'<small>לא ניתן לפתוח את הקובץ</small>';return;}
+  if(k==='image'){var img=new Image();img.alt='';img.onerror=function(){asFile(box,n,url);};img.onclick=function(){var r=box.closest('[data-i]');openFrom(n,r?+r.dataset.i:-1);};img.src=url;box.replaceChildren(img);}
+  else if(k==='video'||k==='audio'){var v=document.createElement(k);v.controls=true;v.preload='metadata';v.onerror=function(){asFile(box,n,url);};v.src=url;box.replaceChildren(v);}
+  else asFile(box,n,url);
+}
+
+/* ---------- Search and date jump ---------- */
+function textNode(i){var node=S.nodes[i];return node&&node.querySelector('.txt, .sys>span');}
+function clearMark(){
+  if(S.marked==null)return;
+  var i=S.marked,t=textNode(i);
+  if(t)t.innerHTML=fmtText(S.msgs[i].x||'');
+  S.nodes[i].classList.remove('hit');S.marked=null;
+}
+function doSearch(){
+  clearMark();
+  S.q=$('#q').value.trim().toLowerCase();S.matches=[];
+  if(S.q)S.msgs.forEach(function(m,i){if(m.x&&m.x.toLowerCase().indexOf(S.q)>=0)S.matches.push(i);});
+  S.mi=S.matches.length-1;showMatch();
+}
+function showMatch(){
+  clearMark();
+  if(!S.q){$('#qc').textContent='';return;}
+  if(!S.matches.length){$('#qc').textContent='אין תוצאות';return;}
+  var i=S.matches[S.mi],t=textNode(i);
+  if(t)t.innerHTML=highlight(S.msgs[i].x,S.q);
+  S.nodes[i].classList.add('hit');S.marked=i;
+  S.nodes[i].scrollIntoView({block:'center'});
+  $('#qc').textContent=(S.mi+1)+'/'+S.matches.length;
+}
+function step(d){if(!S.matches.length)return;S.mi=(S.mi+d+S.matches.length)%S.matches.length;showMatch();}
+function closeSearch(){clearMark();$('#sbar').hidden=true;$('#q').value='';S.q='';S.matches=[];$('#qc').textContent='';}
+function jumpTo(v){
+  if(!v)return;var p=v.split('-'),t=new Date(+p[0],+p[1]-1,+p[2]).getTime();
+  var secs=document.querySelectorAll('#list .day'),target=secs[secs.length-1];
+  for(var i=0;i<secs.length;i++){if(+secs[i].dataset.t>=t){target=secs[i];break;}}
+  if(target)target.scrollIntoView({block:'start'});
+}
+
+/* ---------- Saving a standalone archive ---------- */
+function usedMedia(){var u=[];var seen={};S.msgs.forEach(function(m){if(m.f)m.f.forEach(function(n){if(!seen[n]&&S.media.has(n)){seen[n]=1;u.push(n);}});});return u;}
+function openSave(){
+  var used=usedMedia(),missing=0,all=0,vid=0;
+  S.msgs.forEach(function(m){if(m.f)m.f.forEach(function(n){if(!S.media.has(n))missing++;});});
+  used.forEach(function(n){var s=srcSize(n);all+=s;if(kind(n)==='video')vid+=s;});
+  $('#dstats').textContent=S.msgs.length.toLocaleString('he-IL')+' הודעות, '+used.length+' קובצי מדיה'+(missing?' ('+missing+' קבצים לא נכללו בייצוא המקורי)':'')+'.';
+  $('#dsize').textContent='גודל משוער: '+fmtSize(all*1.34+200000)+(vid?' · בלי סרטונים: '+fmtSize((all-vid)*1.34+200000):'');
+  $('#dlg').showModal();
+}
+function blobToDataURL(b){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=function(){rej(r.error);};r.readAsDataURL(b);});}
+function archiveName(){
+  var o=others(),n;
+  if(S.owner&&o.length===1)n='וואטסאפ - '+S.owner+' עם '+o[0];
+  else n='וואטסאפ - '+S.title;
+  return n.replace(/[\\\/:*?"<>|\n\r]+/g,' ').trim().slice(0,120)+'.html';
+}
+async function saveArchive(incVideo){
+  var used=usedMedia().filter(function(n){return incVideo||kind(n)!=='video';});
+  var parts=[],index={};
+  try{
+    for(var i=0;i<used.length;i++){
+      busy('אורז מדיה '+(i+1)+' מתוך '+used.length+'…');
+      var b=await getBlob(used[i]);if(!b)continue;
+      var id='m'+i;index[used[i]]=id;
+      parts.push('<script type="text/plain" id="'+id+'">',await blobToDataURL(b),'<\/script>\n');
+    }
+    busy('יוצר את הקובץ…');
+    var saved=Date.now();
+    var data={v:1,title:S.title,owner:S.owner,note:S.note,saved:saved,messages:S.msgs,media:index};
+    var json=JSON.stringify(data).replace(/</g,'\\u003c');
+    var head='<!doctype html>\n<html lang="he" dir="rtl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>'+esc(S.title)+'</title>\n<style id="app-style">'+$('#app-style').textContent+'</style>\n</head>\n<body>\n';
+    var out=[head,'<script type="application/json" id="chat-data">',json,'<\/script>\n'].concat(parts,['<script id="app-script">',$('#app-script').textContent,'<\/script>\n</body>\n</html>\n']);
+    var blob=new Blob(out,{type:'text/html;charset=utf-8'});
+    var dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+    if(dl){
+      busy(null);
+      try{await dl.save({filename:archiveName(),data:blob});}
+      catch(err){if(err&&err.code!=='declined')throw new Error(err.message||err.code);}
+      return;
+    }
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=archiveName();
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},60000);
+  }catch(e){console.error(e);alert('השמירה נכשלה: '+(e.message||e)+'\nאם הקובץ גדול מאוד, נסו לשמור בלי סרטונים, או השתמשו בקובץ הכלי שבמכשיר.');}
+  finally{busy(null);}
+}
+
+/* ---------- Wiring ---------- */
+document.body.insertAdjacentHTML('afterbegin',UI);
+var pick=$('#pick'),drop=$('#drop'),home=$('#home');
+pick.addEventListener('change',function(){handleFiles(pick.files);pick.value='';});
+['dragenter','dragover'].forEach(function(ev){home.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('over');});});
+['dragleave','drop'].forEach(function(ev){home.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('over');});});
+home.addEventListener('drop',function(e){handleFiles(e.dataTransfer.files);});
+$('#clist').addEventListener('click',function(e){var b=e.target.closest('.citem');if(b)openStored(b.dataset.id);});
+$('#back').addEventListener('click',showHome);
+$('#editBtn').addEventListener('click',openInfo);
+$('#info').addEventListener('close',async function(){
+  var isNew=!S.id&&!S.archive;
+  if($('#info').returnValue!=='ok'){if(isNew)showHome();return;}
+  var o=$('#fOwner').value,changed=o!==S.owner;
+  S.owner=o||S.owner;S.title=$('#fTitle').value.trim()||defaultTitle();S.note=$('#fNote').value.trim();
+  updateHeader();
+  if(changed){var sc=$('#scroller'),r=sc.scrollTop/Math.max(1,sc.scrollHeight);closeSearch();render();sc.scrollTop=r*sc.scrollHeight;}
+  if(isNew){
+    try{await storeChat();toast('השיחה נשמרה במכשיר');}
+    catch(e){console.error(e);alert('לא הצלחתי לשמור את השיחה במכשיר ('+(e&&e.message||e)+'). אפשר עדיין לצפות בה ולשמור אותה כקובץ שימור.');}
+    finally{busy(null);}
+  }else if(S.id){try{await dbPut('chats',chatMeta(Array.from(S.media.keys())));}catch(e){console.error(e);}}
+});
+$('#infoDel').addEventListener('click',async function(){
+  if(!confirm('למחוק את השיחה "'+S.title+'" מהמכשיר?\nקובצי שימור שכבר שמרת לא יימחקו.'))return;
+  $('#info').close('cancel');
+  try{await deleteStored(S.id);}catch(e){alert('המחיקה נכשלה: '+(e.message||e));}
+  S.id=null;S.archive=true;resetMedia();showHome();
+});
+$('#searchBtn').addEventListener('click',function(){var h=$('#sbar').hidden;if(h){$('#sbar').hidden=false;$('#q').focus();}else closeSearch();});
+var qt;$('#q').addEventListener('input',function(){clearTimeout(qt);qt=setTimeout(doSearch,250);});
+$('#q').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();step(e.shiftKey?1:-1);}if(e.key==='Escape')closeSearch();});
+$('#qup').addEventListener('click',function(){step(-1);});
+$('#qdn').addEventListener('click',function(){step(1);});
+$('#qx').addEventListener('click',closeSearch);
+$('#jump').addEventListener('change',function(e){jumpTo(e.target.value);});
+$('#saveBtn').addEventListener('click',openSave);
+$('#doSave').addEventListener('click',function(){saveArchive($('#incVideo').checked);});
+document.querySelectorAll('[data-help]').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();$('#help').showModal();});});
+$('#galBtn').addEventListener('click',openGallery);
+$('#gx').addEventListener('click',function(){$('#gallery').hidden=true;});
+document.querySelectorAll('.tabs button').forEach(function(b){b.addEventListener('click',function(){renderGallery(b.dataset.tab);});});
+$('#lbx').addEventListener('click',closeViewer);
+$('#lbprev').addEventListener('click',function(){lbStep(-1);});
+$('#lbnext').addEventListener('click',function(){lbStep(1);});
+$('#lbgo').addEventListener('click',function(){goToMsg(LB.list[LB.idx].i);});
+$('#lbstage').addEventListener('click',function(e){if(e.target===e.currentTarget)closeViewer();});
+var tx=null;
+$('#lbstage').addEventListener('touchstart',function(e){tx=e.touches[0].clientX;},{passive:true});
+$('#lbstage').addEventListener('touchend',function(e){if(tx==null)return;var dx=e.changedTouches[0].clientX-tx;tx=null;if(Math.abs(dx)>50)lbStep(dx>0?1:-1);});
+document.addEventListener('keydown',function(e){
+  if(!$('#lightbox').hidden){if(e.key==='ArrowLeft')lbStep(1);else if(e.key==='ArrowRight')lbStep(-1);else if(e.key==='Escape')closeViewer();}
+  else if(!$('#gallery').hidden&&e.key==='Escape')$('#gallery').hidden=true;
+});
+
+var dataNode=document.getElementById('chat-data');
+if(dataNode){
+  try{
+    var d=JSON.parse(dataNode.textContent);
+    S.media=new Map(Object.keys(d.media||{}).map(function(n){return [n,{embedded:d.media[n]}];}));
+    S.savedAt=d.saved||0;S.note=d.note||'';S.archive=true;S.id=null;
+    setup(d.messages||[],d.owner,d.title);
+  }catch(e){console.error(e);alert('לא הצלחתי לקרוא את הארכיון.');showHome();}
+}else{
+  showHome();
+  if(/[?&]shared=/.test(location.search)&&window.caches){
+    history.replaceState(null,'',location.pathname);
+    caches.open('share-inbox').then(async function(c){
+      var keys=await c.keys(),files=[];
+      for(var i=0;i<keys.length;i++){var r=await c.match(keys[i]);if(r)files.push(new File([await r.blob()],decodeURIComponent(r.headers.get('x-name')||'shared.zip')));await c.delete(keys[i]);}
+      if(files.length)handleFiles(files);
+    }).catch(function(e){console.error(e);});
+  }
+  if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)&&document.querySelector('link[rel="manifest"]')){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+}
+})();
+</script>
+</body>
+</html>
